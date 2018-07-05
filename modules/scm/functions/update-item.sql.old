@@ -1,0 +1,69 @@
+CREATE OR REPLACE FUNCTION scm.update_item(json, OUT result json) AS
+$$
+BEGIN
+  WITH item_data AS (
+    SELECT *
+    FROM scm.flatten_item($1)
+  ), item AS (
+    SELECT i.*
+    FROM item_data
+    INNER JOIN scm.item i
+      USING (item_uuid)
+  ), task_instance AS (
+    SELECT ti.*
+    FROM item
+    INNER JOIN scm.task_instance ti
+      USING (item_uuid)
+  ), deleted AS (
+    DELETE FROM scm.boq_line l
+    USING task_instance ti
+    WHERE l.boq_id = ti.boq_id
+  ), -- Select boq line data from items that have provided a boq
+  item_boq_line AS (
+    SELECT
+      ti.boq_id,
+      pr.product_id,
+      quantity
+    FROM item_data item
+    INNER JOIN task_instance ti
+      USING (item_uuid)
+    -- Need route_task for seq_num
+    INNER JOIN scm.route_task rt
+      USING (task_id)
+    INNER JOIN json_each(item.boq) item_boq
+      ON rt.seq_num = (item_boq.key)::text::integer
+    CROSS JOIN json_to_recordset(item_boq.value) AS
+      boq(code text, quantity numeric(10,3))
+    INNER JOIN prd.product pr
+      ON boq.code = pr.code
+    WHERE item.boq IS NOT NULL
+  ),
+  -- Select boq line data from items that have provided attributes
+  item_attr_boq_line AS (
+    SELECT
+      ti.boq_id,
+      pr.product_id,
+      (attr.value)::numeric(10,3)
+    FROM task_instance ti
+    INNER JOIN scm.task_inst_attr_map map
+      USING (task_id)
+    INNER JOIN prd.product pr
+      ON map.code = pr.code
+    INNER JOIN item_data item
+      USING (item_uuid)
+    INNER JOIN json_each_text(item.attributes) attr
+      ON map.attribute = attr.key
+  )
+  INSERT INTO scm.boq_line (
+    boq_id,
+    product_id,
+    quantity
+  )
+  SELECT * FROM item_boq_line
+  UNION ALL
+  SELECT * FROM item_attr_boq_line;
+
+  SELECT '"done"'::json INTO result;
+END
+$$
+LANGUAGE 'plpgsql' SECURITY DEFINER;

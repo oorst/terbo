@@ -1,0 +1,40 @@
+{
+  "title": "scm.createItem(json)",
+  "description": "createItem json shape",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "boq": {
+      "type": "object",
+      "patternProperties": {
+        "^[0-9]*$": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "quantitiy": {
+                "type": "number"
+              }
+            },
+            "required": ["code", "quantity"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "attributes": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "required": ["code"]
+}
