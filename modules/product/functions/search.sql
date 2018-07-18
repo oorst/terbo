@@ -16,25 +16,22 @@ BEGIN
   FROM (
     SELECT
       p.product_id AS id,
-      p.uuid,
+      p.name,
       p.code,
       p.sku,
       p.manufacturer_code AS "manufacturerCode",
       p.supplier_code AS "supplierCode",
-      COALESCE(p.name, fam.name) AS name,
-      (
-        SELECT f
-        FROM (
-          SELECT
-            fam.name,
-            fam.code,
-            fam.manufacturer_code AS "manufacturerCode",
-            fam.supplier_code AS "supplierCode"
-        ) f
-        WHERE NOT (f IS NULL)
-      ) AS family,
       p.description,
-      p.data->'attributes' AS attributes
+      p.data->'attributes' AS attributes,
+      fam.product_id AS "familyId",
+      fam.name AS "familyName",
+      fam.code AS "familyCode",
+      fam.sku AS "familySku",
+      fam.manufacturer_code AS "familyManufacturerCode",
+      fam.supplier_code AS "familySupplierCode",
+      fam.description AS "familyDescription",
+      coalesce(p.name, fam.name) AS "$name",
+      coalesce(p.sku, p.code, p.supplier_code, p.manufacturer_code) AS "$code"
     FROM prd.product p
     LEFT JOIN prd.product fam
       ON fam.product_id = p.family_id

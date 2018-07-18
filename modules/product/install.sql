@@ -5,7 +5,7 @@
 
 \echo 'Installing Product Basics...'
 INSERT INTO prd.uom (name, abbr, type) VALUES
-  ('Metre', 'm', 'length'),
-  ('Kilogram', 'kg', 'mass'),
-  ('Square metre', 'sqm', 'area'),
-  ('Cubic metre', 'cbm', 'volume');
+  ('Metre', 'm', 'length'), -- 1
+  ('Kilogram', 'kg', 'mass'), -- 2
+  ('Square metre', 'sqm', 'area'), -- 3
+  ('Cubic metre', 'cbm', 'volume'); -- 4

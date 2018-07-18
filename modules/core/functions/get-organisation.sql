@@ -7,9 +7,17 @@ BEGIN
       'organisation' AS type,
       party_id AS id,
       name,
+      trading_name AS "tradingName",
       url,
-      data
+      data,
+      a.addr1,
+      a.addr2,
+      a.town,
+      a.state,
+      a.code
     FROM organisation
+    LEFT JOIN address a
+      USING (address_id)
     WHERE party_id = id
   ) r;
 END

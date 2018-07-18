@@ -6,11 +6,11 @@ CREATE TYPE li_note_importance_t AS ENUM ('normal', 'important');
 CREATE SCHEMA sales
   CREATE TABLE source_document (
     document_id  serial PRIMARY KEY,
-    issued_to    integer REFERENCES party (party_id) NOT NULL ON DELETE SET NULL,
-    issued_by    integer REFERENCES party (party_id) NOT NULL ON DELETE SET NULL,
+    issued_to    integer NOT NULL REFERENCES party (party_id) ON DELETE SET NULL,
     data         jsonb,
     status       document_status_t DEFAULT 'DRAFT',
     issued_at    timestamp,
+    created_by   integer NOT NULL REFERENCES person (party_id) ON DELETE SET NULL,
     created      timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
@@ -36,11 +36,12 @@ CREATE SCHEMA sales
   )
 
   CREATE TABLE quote (
-    document_id integer REFERENCES sales.source_document (document_id),
+    document_id integer REFERENCES sales.source_document (document_id) ON DELETE CASCADE,
     quote_num   text,
+    contact_id  integer NOT NULL REFERENCES party (party_id) ON DELETE SET NULL,
     period      integer NOT NULL DEFAULT 30,
     expiry_date date,
-    PRIMARY KEY (quote_id)
+    PRIMARY KEY (document_id)
   )
 
   CREATE TABLE payment (

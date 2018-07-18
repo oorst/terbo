@@ -14,22 +14,21 @@ CREATE SCHEMA prd
 
   CREATE TABLE product (
     product_id        serial PRIMARY KEY,
-    uuid              uuid DEFAULT uuid_generate_v4(),
     family_id         integer REFERENCES product (product_id),
+    type              text DEFAULT 'product',
+    name              text,
+    description       text,
+    url               text,
+    code              text,
+    sku               text UNIQUE,
     manufacturer_id   integer REFERENCES party (party_id) ON DELETE SET NULL,
     manufacturer_code text,
     supplier_id       integer REFERENCES party (party_id) ON DELETE SET NULL,
     supplier_code     text,
-    code              text,
-    sku               text UNIQUE,
-    name              text,
-    description       text,
     data              jsonb,
-    type              text DEFAULT 'product',
     uom_id            integer REFERENCES uom (uom_id) ON DELETE SET NULL,
     -- Weight in kilograms for every base unit of measure
     weight            numeric(10,3),
-    -- The composite Product that this Product belongs to
     composition_id    integer REFERENCES composition (composition_id) ON DELETE SET NULL,
     created           timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at            timestamp,
@@ -55,11 +54,12 @@ CREATE SCHEMA prd
   )
 
   CREATE TABLE component (
-    -- product_id of the component Product
-    component_id   serial PRIMARY KEY,
-    product_id     integer REFERENCES product (product_id) ON DELETE CASCADE,
-    composition_id integer REFERENCES composition (composition_id) ON DELETE CASCADE,
-    quantity       numeric(10,2) DEFAULT 1
+    component_id serial PRIMARY KEY,
+    product_id   integer REFERENCES product (product_id) ON DELETE CASCADE,
+    parent_id    integer REFERENCES product (product_id) ON DELETE CASCADE,
+    quantity     numeric(10,3) DEFAULT 1,
+    created      timestamp DEFAULT CURRENT_TIMESTAMP,
+    end_at       timestamp
   )
 
   CREATE TABLE tag (
@@ -170,6 +170,20 @@ CREATE SCHEMA prd
       COALESCE(p.supplier_code, fam.supplier_code) AS supplier_code,
       COALESCE(p.name, fam.name) AS name,
       COALESCE(p.description, fam.description) AS description,
+      p.created,
+      p.modified
+    FROM prd.product p
+    LEFT JOIN prd.product fam
+      ON fam.product_id = p.family_id
+
+  CREATE OR REPLACE VIEW product_list_v AS
+    SELECT
+      p.product_id,
+      p.type,
+      p.sku,
+      COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS _code,
+      COALESCE(p.name, fam.name) AS _name,
+      COALESCE(p.description, fam.description) AS _description,
       p.created,
       p.modified
     FROM prd.product p

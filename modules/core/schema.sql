@@ -37,24 +37,25 @@ CREATE TABLE party (
 );
 
 CREATE TABLE person (
-  party_id       integer REFERENCES party (party_id) PRIMARY KEY,
-  name           text,
-  email          text UNIQUE,
-  mobile         text,
-  phone          text,
-  address        integer REFERENCES address (address_id) ON DELETE SET NULL, -- Residential address
-  postal_address integer REFERENCES address (address_id) ON DELETE SET NULL, -- Postal address
-  created        timestamp DEFAULT CURRENT_TIMESTAMP
+  party_id           integer REFERENCES party (party_id) PRIMARY KEY,
+  name               text,
+  email              text UNIQUE,
+  mobile             text,
+  phone              text,
+  address_id         integer REFERENCES address (address_id) ON DELETE SET NULL, -- Residential address
+  billing_address_id integer REFERENCES address (address_id) ON DELETE SET NULL, -- Postal address
+  created            timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE organisation (
-  party_id        integer REFERENCES party (party_id) PRIMARY KEY,
-  name            text,
-  trading_name    text,
-  address         integer REFERENCES address (address_id) ON DELETE SET NULL,
-  url             text,
-  data            jsonb,
-  created         timestamp DEFAULT CURRENT_TIMESTAMP
+  party_id           integer REFERENCES party (party_id) PRIMARY KEY,
+  name               text,
+  trading_name       text,
+  address_id         integer REFERENCES address (address_id) ON DELETE SET NULL,
+  billing_address_id integer REFERENCES address (address_id) ON DELETE SET NULL,
+  url                text,
+  data               jsonb,
+  created            timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE role (
@@ -81,6 +82,12 @@ CREATE TABLE party_relationship (
   created         timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
+-- A place to put DB related settings
+CREATE TABLE core_settings (
+  name  text,
+  value text
+);
+
 CREATE OR REPLACE VIEW party_v AS
   SELECT
     party_id,
@@ -95,7 +102,7 @@ CREATE OR REPLACE VIEW party_v AS
   SELECT
     party_id,
     type,
-    name
+    coalesce(trading_name, name) AS name
   FROM organisation
   INNER JOIN party
     USING (party_id);

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION scm.get_item(_uuid uuid, OUT result json) AS
+CREATE OR REPLACE FUNCTION scm.get_item(uuid, OUT result json) AS
 $$
 BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
@@ -8,55 +8,54 @@ BEGIN
       i.type,
       i.data,
       i.name,
-      -- Product
+      p.product_id AS "productId",
+      p.name AS "productName",
+      p.description AS "productDescription",
+      p.sku,
+      p.code AS "productCode",
+      fam.name AS "productFamilyName",
+      fam.code AS "productFamilyCode",
+      coalesce(p.name, fam.name) AS "$productName",
+      coalesce(i.name, p.name, fam.name) AS "$name",
+      coalesce(p.sku, p.code, fam.code) AS "$code",
+      parent.item_uuid AS "parentUuid",
+      coalesce(parent.name, parentP.name, parentFam.name) AS "$parentName",
+      coalesce(parentP.code, parentFam.code) AS "$parentCode",
       (
-        SELECT json_strip_nulls(to_json(r))
+        SELECT
+          array_agg(r)
         FROM (
           SELECT
-            p.product_id AS id,
-            p.name,
-            p.code,
-            p.manufacturer_code,
-            p.supplier_code,
-            p.sku
-          WHERE NOT (p IS NULL)
-        ) r
-      ) AS product,
-      (
-        SELECT json_strip_nulls(json_agg(r))
-        FROM (
-          SELECT
-            s.sub_assembly_id AS "subAssemblyId",
-            s.quantity,
-            iv.item_uuid AS uuid,
-            iv.type,
-            iv.name,
-            iv.code,
-            iv.sku,
-            iv.manufacturer_code AS "manufacturerCode",
-            iv.supplier_code AS "supplierCode"
-          FROM scm.sub_assembly s
-          INNER JOIN scm.item_v iv
-            ON iv.item_uuid = s.item_uuid
-          WHERE s.parent_uuid = i.item_uuid
-          ORDER BY s.sub_assembly_id
+            ss.sub_assembly_id AS "subAssemblyId",
+            ss.quantity,
+            ii.item_uuid AS uuid,
+            ii.type,
+            coalesce(ii.name, pp.name, ff.name) AS "$name"
+          FROM scm.sub_assembly ss
+          INNER JOIN scm.item ii
+            ON ii.item_uuid = ss.item_uuid
+          LEFT JOIN prd.product pp
+            ON pp.product_id = ii.product_id
+          LEFT JOIN prd.product ff
+            ON ff.product_id = pp.family_id
+          WHERE ss.parent_uuid = i.item_uuid
         ) r
       ) AS "subAssemblies",
-      -- Route
-      (
-        SELECT json_strip_nulls(to_json(r))
-        FROM (
-          SELECT
-            route.route_id AS id,
-            route.name
-          FROM scm.route route
-          WHERE route.route_id = i.route_id
-        ) r
-      ) AS route
+      (SELECT sum(line_total) from scm.item_boq(i.item_uuid)) AS "$gross"
     FROM scm.item i
-    LEFT JOIN prd.product_v p
+    LEFT JOIN prd.product p
       USING (product_id)
-    WHERE i.item_uuid = _uuid
+    LEFT JOIN prd.product fam
+      ON fam.product_id = p.family_id
+    LEFT JOIN scm.sub_assembly s
+      ON s.item_uuid = i.item_uuid
+    LEFT JOIN scm.item parent
+      ON parent.item_uuid = s.parent_uuid
+    LEFT JOIN prd.product parentp
+      ON parentp.product_id = parent.product_id
+    LEFT JOIN prd.product parentFam
+      ON parentFam.product_id = parentP.family_id
+    WHERE i.item_uuid = $1
   ) r;
 END
 $$
@@ -65,26 +64,11 @@ LANGUAGE 'plpgsql';
 CREATE OR REPLACE FUNCTION scm.get_item(json, OUT result json) AS
 $$
 BEGIN
-  WITH payload AS (
-    SELECT
-      p.uuid AS item_uuid,
-      p."productId" AS product_id,
-      code,
-      sku
-    FROM json_to_record($1) AS p (
-      uuid        uuid,
-      "productId" integer,
-      code        text,
-      sku         text
-    )
-  )
-  SELECT scm.get_item(i.item_uuid) INTO result
-  FROM scm.item_v i
-  INNER JOIN payload p
-    ON i.item_uuid = p.item_uuid
-      OR i.product_id = p.product_id
-      OR i.code = p.code
-      OR i.sku = p.sku;
+  IF $1->>'uuid' IS NULL THEN
+    RAISE EXCEPTION 'no item uuid provided';
+  END IF;
+
+  SELECT scm.get_item(($1->>'uuid')::uuid) INTO result;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

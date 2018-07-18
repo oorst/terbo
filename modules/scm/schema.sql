@@ -1,6 +1,9 @@
 -- Enables creation of uuids
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Insert SCM related settings
+INSERT INTO core_settings VALUES ('rgx.uuid', '^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$');
+
 -- Create types
 CREATE TYPE scm_item_t AS ENUM ('ITEM', 'SUBASSEMBLY', 'PART', 'PRODUCT');
 CREATE TYPE scm_task_concurrency_t AS ENUM ('SAME', 'ALL');
@@ -26,11 +29,11 @@ CREATE SCHEMA scm
     location  integer REFERENCES address (address_id) ON DELETE SET NULL
   )
 
+  -- Item uses a UUID primary key so that functions can be used across the Item
+  -- table and the item instance table
   CREATE TABLE item (
-    item_id     serial,
-    item_uuid   uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+    item_uuid   uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     product_id  integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
-    parent_uuid uuid REFERENCES item (item_uuid),
     -- Identifier, should be unique amongst sub items
     type        scm_item_t,
     name        text,
@@ -43,28 +46,31 @@ CREATE SCHEMA scm
     net         numeric(10,2),
     weight      numeric(10,3),
     created     timestamp DEFAULT CURRENT_TIMESTAMP,
+    end_at      timestamp,
     modified    timestamp DEFAULT CURRENT_TIMESTAMP
+  )
+
+  CREATE TABLE sub_assembly (
+    sub_assembly_id serial PRIMARY KEY,
+    root_uuid       uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
+    parent_uuid     uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
+    item_uuid       uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
+    quantity        numeric(10,3)
   )
 
   CREATE TABLE item_instance (
     item_instance_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    item_uuid          uuid REFERENCES item (item_uuid),
+    item_uuid          uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
     data               jsonb,
     created            timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
-  CREATE TABLE sub_assembly (
-    sub_assembly_id  serial PRIMARY KEY,
-    root_uuid   uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
-    parent_uuid uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
-    item_uuid   uuid  REFERENCES item (item_uuid) ON DELETE CASCADE,
-    quantity    numeric(10,3)
-  )
-
-  CREATE TABLE part (
-    parent_uuid uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
-    child_uuid  uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
-    quantity    numeric(10,2)
+  CREATE TABLE item_instance_subassembly (
+    hierarchy_id  serial PRIMARY KEY,
+    item_uuid     uuid REFERENCES item_instance (item_instance_uuid) ON DELETE CASCADE,
+    root_uuid     uuid REFERENCES item_instance (item_instance_uuid) ON DELETE CASCADE,
+    parent_uuid   uuid REFERENCES item_instance (item_instance_uuid) ON DELETE CASCADE,
+    quantity      numeric(10,3)
   )
 
   CREATE TABLE work_center (
@@ -142,7 +148,7 @@ CREATE SCHEMA scm
       i.item_uuid,
       i.type,
       p.product_id,
-      COALESCE(i.name, p.name, fam.name) AS name,
+      COALESCE(i.name, p.name, fam.name) AS _name,
       p.code,
       p.sku,
       p.manufacturer_code,
@@ -151,7 +157,27 @@ CREATE SCHEMA scm
     LEFT JOIN prd.product p
       USING (product_id)
     LEFT JOIN prd.product fam
-      ON fam.product_id = p.family_id;
+      ON fam.product_id = p.family_id
+    WHERE i.end_at IS NULL OR i.end_at > CURRENT_TIMESTAMP
+
+  CREATE OR REPLACE VIEW item_list_v AS
+    SELECT
+      i.item_uuid,
+      i.type,
+      i.name,
+      p.product_id,
+      p.name AS product_name,
+      fam.name AS product_family_name,
+      COALESCE(i.name, p.name, fam.name) AS _name,
+      p.code AS product_code,
+      fam.code AS product_family_code,
+      coalesce(p.code, fam.code) AS _code
+    FROM scm.item i
+    LEFT JOIN prd.product p
+      USING (product_id)
+    LEFT JOIN prd.product fam
+      ON fam.product_id = p.family_id
+    WHERE i.end_at IS NULL OR i.end_at > CURRENT_TIMESTAMP;
 
 --
 -- Triggers

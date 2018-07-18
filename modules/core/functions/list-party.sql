@@ -1,11 +1,10 @@
-CREATE OR REPLACE FUNCTION search_party (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION list_party (json, OUT result json) AS
 $$
 BEGIN
   WITH parties AS (
     SELECT
       party_id,
       name,
-      NULL AS trading_name,
       email,
       NULL AS url
     FROM person
@@ -15,8 +14,7 @@ BEGIN
 
     SELECT
       party_id,
-      name,
-      trading_name,
+      coalesce(trading_name, name) AS name,
       NULL AS email,
       url
     FROM organisation
@@ -27,7 +25,6 @@ BEGIN
     SELECT
       party_id AS id,
       name,
-      trading_name AS "tradingName",
       email,
       url
     FROM parties

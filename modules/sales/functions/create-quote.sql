@@ -3,11 +3,15 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
+      quote."createdBy" AS created_by,
       quote."issuedTo" AS issued_to,
-      quote.period
+      quote.period,
+      quote."contactId" AS contact_id
     FROM json_to_record($1) AS quote (
-      "issuedTo" integer,
-      period     integer
+      "createdBy" integer,
+      "issuedTo"  integer,
+      period      integer,
+      "contactId" integer
     )
   ),
   line_item AS (
@@ -44,20 +48,24 @@ BEGIN
   ),
   document AS (
     INSERT INTO sales.source_document (
-      issued_to
+      issued_to,
+      created_by
     )
     SELECT
-      issued_to
+      issued_to,
+      created_by
     FROM payload
     RETURNING *
   ), quote AS (
     INSERT INTO sales.quote (
       document_id,
-      expiry_date
+      expiry_date,
+      contact_id
     )
     SELECT
       d.document_id,
-      (current_date + COALESCE(p.period, 30))::date AS expiry_date
+      (current_date + COALESCE(p.period, 30))::date AS expiry_date,
+      p.contact_id
     FROM document d
     CROSS JOIN payload p
     RETURNING *
@@ -65,7 +73,8 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      document_id AS id
+      document_id AS id,
+      status
     FROM document
   ) r;
 END

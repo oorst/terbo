@@ -11,35 +11,19 @@ BEGIN
       pr.sku,
       pr.name,
       pr.description,
+      pr.url,
       -- Family
       fam.name AS "familyName",
+      coalesce(pr.name, fam.name) AS "$name",
       fam.code AS "familyCode",
       fam.manufacturer_code AS "familyManufacturerCode",
       fam.supplier_code AS "familySupplierCode",
-      (
-        SELECT to_json(m)
-        FROM (
-          SELECT
-            party_id AS id,
-            type,
-            name
-          FROM party_v
-          WHERE party_id = pr.manufacturer_id
-        ) m
-      ) AS manufacturer,
+      man.id AS "manufacturerId",
+      man.name AS "manufacturerName",
       pr.manufacturer_code AS "manufacturerCode",
       -- Supplier
-      (
-        SELECT to_json(sup)
-        FROM (
-          SELECT
-            party_id AS id,
-            type,
-            name
-          FROM party_v
-          WHERE party_id = pr.supplier_id
-        ) sup
-      ) AS supplier,
+      sup.id AS "supplierId",
+      sup.name AS "supplierName",
       pr.supplier_code AS "supplierCode",
       pr.data,
       -- UOM
@@ -77,14 +61,6 @@ BEGIN
           USING (tag_id)
         WHERE pt.product_id = pr.product_id
       ) AS tags,
-      -- Refs
-      (
-        SELECT json_agg(ref.name)
-        FROM prd.product_ref pref
-        INNER JOIN prd.ref ref
-          USING (ref_id)
-        WHERE pref.product_id = pr.product_id
-      ) AS refs,
       (
         SELECT json_agg(r)
         FROM (
@@ -119,19 +95,23 @@ BEGIN
         SELECT array_agg(c)
         FROM (
           SELECT
-            component.component_id AS id,
+            component.component_id AS "componentId",
             component.quantity,
-            p.product_id AS "productId",
-            p.name,
-            COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code) AS code
+            component.product_id AS "productId",
+            p.name
           FROM prd.component component
           LEFT JOIN prd.product_abbr_v p
             USING (product_id)
-          WHERE component.composition_id = composition.composition_id
+          WHERE component.parent_id = pr.product_id
+            AND component.end_at IS NULL
         ) c
       ) AS components,
       -- Pricing
-      COALESCE(price.gross, cost.amount * (1 + COALESCE(price.markup, markup.amount) / 100.00)) AS gross,
+      coalesce(
+        prd.composite_product_gross(pr.product_id),
+        price.gross,
+        cost.amount * (1 + (coalesce(price.markup, markup.amount)) / 100.00)
+      )::numeric(10,2) AS "$gross",
       price.net AS net,
       pr.created,
       pr.modified
@@ -140,6 +120,22 @@ BEGIN
       USING (uom_id)
     LEFT JOIN prd.product fam
       ON fam.product_id = pr.family_id
+    LEFT JOIN (
+      SELECT
+        party_id AS id,
+        name,
+        type
+      FROM party_v
+    ) man
+      ON man.id = pr.manufacturer_id
+    LEFT JOIN (
+      SELECT
+        party_id AS id,
+        name,
+        type
+      FROM party_v
+    ) sup
+      ON sup.id = pr.supplier_id
     LEFT JOIN LATERAL (
       SELECT DISTINCT ON (cost.product_id)
         cost.product_id,

@@ -11,10 +11,13 @@
 \ir json-to-boq.sql
 \ir json-to-item-boq.sql
 \ir insert-item.sql
-\ir item-bom.sql
+\ir item-boq.sql
 \ir update-item.sql
 \ir update-route.sql
 \ir item-boq.sql
-\ir search-items.sql
+\ir list-items.sql
+-- \ir search-items.sql
 \ir search-routes.sql
 \ir search-tasks.sql
+\ir update-subassembly.sql
+\ir delete-subassembly.sql

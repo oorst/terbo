@@ -1,124 +1,93 @@
 CREATE OR REPLACE FUNCTION prd.update_composition (json, OUT result json) AS
 $$
+DECLARE
+
+  _composition_id prd.composition;
+
 BEGIN
-  -- Update and return the composition
-  WITH composition AS (
+  -- Must provide a parent product id
+  IF $1->'parentId' IS NULL THEN
+    RAISE EXCEPTION 'must provide a parent id';
+  END IF;
+
+  -- If compositionId is null, then create a new composition and update the
+  -- parent product
+  IF $1->'compositionId' IS NULL THEN
+    WITH new_composition AS (
+      INSERT INTO prd.composition (
+        explode
+      )
+      SELECT
+        explode
+      FROM json_to_record($1) AS j (
+        "parentId" integer,
+        explode    boolean
+      )
+      RETURNING *
+    )
+    UPDATE prd.product p SET composition_id = c.composition_id
+    FROM new_composition c
+    WHERE p.product_id = ($1->>'parentId')::integer;
+  -- Update the existing composition
+  ELSE
+    WITH payload AS (
+      SELECT
+        j."compositionId" AS composition_id,
+        explode
+      FROM json_to_record($1) AS j (
+        "compositionId" integer,
+        explode         boolean
+      )
+    )
     UPDATE prd.composition c SET (
       explode
     ) = (
-      -- Ensure explode is always a boolean
-      CASE
-        WHEN payload_composition.explode IS NULL THEN
-          FALSE
-        ELSE payload_composition.explode
-      END
+      j.explode
     )
-    FROM json_to_record($1) AS payload_composition (
-      id      integer,
-      explode boolean
-    )
-    WHERE c.composition_id = payload_composition.id
-    RETURNING c.*
-  ), payload_component AS (
+    FROM payload j
+    WHERE c.composition_id = j.composition_id;
+  END IF;
+
+  -- Insert, update or inactivate components as necessary
+  WITH payload_component AS (
     SELECT
-      composition.composition_id,
-      component.id AS component_id,
-      component."productId" AS product_id,
-      component.quantity,
-      component.removed
-    FROM json_to_recordset($1->'components') AS component (
-      id            integer,
+      j."componentId" AS component_id,
+      j."productId" AS product_id,
+      j.quantity,
+      j.removed
+    FROM json_to_recordset($1->'components') AS j (
+      "componentId" integer,
       "productId"   integer,
       quantity      numeric(10,3),
       removed       boolean
     )
-    CROSS JOIN composition
+  ), new_component AS (
+    INSERT INTO prd.component (
+      parent_id,
+      product_id,
+      quantity
+    )
+    SELECT
+      ($1->>'parentId')::integer,
+      j.product_id,
+      j.quantity
+    FROM payload_component j
+    WHERE j.component_id IS NULL AND j.removed IS NOT TRUE
   ), updated_component AS (
-    UPDATE prd.component ex SET (
+    UPDATE prd.component c SET (
       product_id,
       quantity
     ) = (
-      payload.product_id,
-      payload.quantity
+      j.product_id,
+      j.quantity
     )
-    FROM payload_component payload
-    WHERE ex.component_id = payload.component_id
-    RETURNING ex.*
-  ), new_component AS (
-    INSERT INTO prd.component (
-      composition_id,
-      product_id,
-      quantity
-    )
-    SELECT
-      composition_id,
-      product_id,
-      quantity
-    FROM payload_component payload
-    WHERE payload.component_id IS NULL AND payload.removed IS NOT TRUE
-    RETURNING *
-  ), deleted AS (
-    DELETE FROM prd.component existing
-    USING payload_component
-    WHERE existing.component_id = payload_component.component_id
-      AND payload_component.removed IS TRUE
-    RETURNING existing.*
+    FROM payload_component j
+    WHERE c.component_id = j.component_id
   )
-  SELECT '{"ok": true }'::json INTO result;
-
-  IF $1->>'id' IS NOT NULL THEN
-    -- Delete empty compositions
-    DELETE FROM prd.composition c
-    WHERE NOT EXISTS (
-      SELECT
-      FROM prd.component component
-      WHERE  component.composition_id = ($1->>'id')::integer
-   );
-
-    RETURN;
-  END IF;
-
-  -- Create a new composition and components if required
-  WITH composition AS (
-    INSERT INTO prd.composition (
-      explode
-    )
-    SELECT
-      composition.explode
-    FROM json_to_record($1) AS composition (explode boolean)
-    RETURNING *
-  ), payload_component AS (
-    SELECT
-      composition.composition_id,
-      component."productId" AS product_id,
-      component.quantity,
-      component.removed
-    FROM json_to_recordset($1->'components') AS component (
-      "productId" integer,
-      quantity    numeric(10,3),
-      removed     boolean
-    )
-    CROSS JOIN composition
-  ), new_component AS (
-    INSERT INTO prd.component (
-      composition_id,
-      product_id,
-      quantity
-    )
-    SELECT
-      composition_id,
-      product_id,
-      quantity
-    FROM payload_component
-    WHERE removed IS NOT TRUE
-    RETURNING *
-  ),
-  product AS (
-    UPDATE prd.product p SET (composition_id) = (composition.composition_id)
-    FROM composition
-    WHERE p.product_id = ($1->>'productId')::integer
-  )
-  SELECT '{ "ok": true }'::json INTO result;
+  -- Inactivate by setting end_at
+  UPDATE prd.component c SET end_at = CURRENT_TIMESTAMP
+  FROM payload_component j
+  WHERE c.component_id = j.component_id AND j.removed IS TRUE;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

@@ -1,31 +1,99 @@
 CREATE OR REPLACE FUNCTION create_organisation (json, OUT result json) AS
 $$
 BEGIN
-  WITH new_organisation AS (
+  WITH payload_organisation AS (
+    SELECT
+      o.name,
+      o."tradingName" AS trading_name,
+      o.data,
+      o.url
+    FROM json_to_record($1) AS o (
+      name          text,
+      "tradingName" text,
+      data          jsonb,
+      url           text
+    )
+  ), payload_address AS (
+    INSERT INTO address (
+      addr1,
+      addr2,
+      town,
+      state,
+      code,
+      type
+    )
+    SELECT
+      addr1,
+      addr2,
+      town,
+      state,
+      code,
+      ("addressType")::smallint AS type
+    FROM json_to_record($1) AS a (
+      addr1 text,
+      addr2 text,
+      town  text,
+      state text,
+      code  text,
+      "addressType" text
+    )
+    WHERE NOT (a is NULL)
+    RETURNING *
+  ), billing_address AS (
+    INSERT INTO address (
+      addr1,
+      addr2,
+      town,
+      state,
+      code,
+      type
+    )
+    SELECT
+      "billingAddr1" AS addr1,
+      "billingAddr2" AS addr2,
+      "billingTown" AS town,
+      "billingState" AS state,
+      "billingCode" AS code,
+      ("billingAddressType")::smallint AS type
+    FROM json_to_record($1) AS a (
+      "billingAddr1" text,
+      "billingAddr2" text,
+      "billingTown"  text,
+      "billingState" text,
+      "billingCode"  text,
+      "billingAddressType" text
+    )
+    WHERE NOT (a is NULL)
+    RETURNING *
+  ), new_organisation AS (
     INSERT INTO organisation (
       name,
-      url,
+      trading_name,
       data,
-      address
-    ) VALUES (
-      $1->>'name',
-      $1->>'url',
-      $1->'data',
-      CASE
-        WHEN $1->'address' IS NOT NULL THEN
-          (
-            SELECT address_id
-            FROM insert_address($1->'address')
-          )
-        ELSE NULL
-      END
+      url,
+      address_id,
+      billing_address_id
     )
+    SELECT
+      NULLIF(o.name, ''),
+      NULLIF(o.trading_name, ''),
+      o.data,
+      o.url,
+      (SELECT address_id FROM payload_address),
+      CASE
+        WHEN ($1->>'noBilling')::boolean IS TRUE THEN
+          (SELECT address_id FROM payload_address)
+        ELSE (SELECT address_id FROM billing_address)
+      END
+    FROM payload_organisation o
     RETURNING *
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      party_id AS id
+      party_id AS id,
+      name,
+      trading_name AS "tradingName"
     FROM new_organisation
   ) r;
 END

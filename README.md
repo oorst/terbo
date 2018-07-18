@@ -1,3 +1,13 @@
+# Terbo
+
+Terbo is a modular ERP database for Postgres. The database can be built by
+installing the desired modules and their dependencies.
+
+The API is implemented through stored procedures that take JSON arguments and
+return JSON objects.
+
+Wrap the modules in your own SQL to build more functionality.
+
 ### API
 
 The Terbo API is implemented through functions.  API functions take and return

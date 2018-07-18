@@ -10,3 +10,4 @@
 \ir search.sql
 \ir current-cost.sql
 \ir composite-product-gross.sql
+\ir flatten-composite.sql

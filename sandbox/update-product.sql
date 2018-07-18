@@ -1,25 +1,19 @@
 SELECT
-  format('UPDATE scm.item SET (%s) = (%s) WHERE item_uuid = ''%s''', c.column, c.value, c.uuid)
-FROM (
-  SELECT
-    string_agg(q.column, ', ') AS column,
-    string_agg(q.value, ', ') AS value,
-    '2e538894-27c3-4e21-909e-fc3ef59610c6'::uuid AS uuid
-  FROM (
-    SELECT
-      CASE p.key
-        WHEN 'productId' THEN 'product_id'
-        ELSE p.key
-      END AS column,
-      CASE
-        -- check if it's a number
-        WHEN p.value ~ '^\d+(.\d+)?$' THEN
-          p.value
-        WHEN p.value IS NULL THEN
-          NULL
-        ELSE quote_literal(p.value)
-      END AS value
-    FROM json_each_text('{"uuid": "2e538894-27c3-4e21-909e-fc3ef59610c6", "productId": 45, "name": "nooch", "foo": null }'::json) p
-    WHERE p.key != 'uuid'
-  ) q
-) c;
+  pv._name,
+  i.quantity AS i_q,
+  i.item_uuid,
+  i.product_id,
+  COALESCE(
+    (i.data->'attributes'->>'quantity')::numeric(10,3) * i.quantity,
+    (i.data->'attributes'->>uom.type)::numeric(10,3) * i.quantity,
+    i.quantity
+  )::numeric(10,3) AS quantity,
+  i.explode
+FROM scm.flatten_item('977cddd2-c3cd-443a-81af-4af478a414e5'::uuid) i
+INNER JOIN prd.product p
+  USING (product_id)
+INNER JOIN prd.product_list_v pv
+  ON pv.product_id = p.product_id
+LEFT JOIN prd.uom uom -- Left join as some products may have null uom_id
+  ON uom.uom_id = p.uom_id
+WHERE i.type = 'PART' OR i.type = 'PRODUCT';

@@ -1,13 +1,19 @@
 CREATE OR REPLACE FUNCTION scm.create_item (json, OUT result json) AS
 $$
 BEGIN
-  IF UPPER($1->>'type') = ANY(enum_range(null::scm_item_t)::text[]) IS NOT TRUE THEN
-    RAISE EXCEPTION 'a valid type must be provided'
+  IF UPPER($1->>'type') = ANY(enum_range(null::scm_item_t)::text[]) IS NOT TRUE AND ($1->>'copy')::boolean IS NOT TRUE THEN
+    RAISE EXCEPTION 'a valid type must be provided when creating a new item'
       USING HINT = 'valid item types are ''ITEM'', ''SUBASSEMBLY'',''PART'' or ''PRODUCT''';
   END IF;
 
-  IF $1->'parentUuid' IS NULL AND UPPER($1->>'type') != 'ITEM' THEN
-    RAISE EXCEPTION 'cannot create sub-assembly, part or product without a parent uuid';
+  IF ($1->>'copy')::boolean IS TRUE AND $1->'templateUuid' IS NULL THEN
+    RAISE EXCEPTION 'template uuid not provided'
+      USING HINT = 'a template uuid must be provided when copying an item';
+  END IF;
+
+  IF ($1->>'copy')::boolean IS TRUE THEN
+    SELECT scm.copy_item($1) INTO result;
+    RETURN;
   END IF;
 
   WITH payload AS (
@@ -67,7 +73,7 @@ BEGIN
       p.product_id AS "productId",
       p.name AS "productName",
       s.parent_uuid AS "parentUuid",
-      s.root_uuid AS "rootId"
+      s.root_uuid AS "rootUuid"
     FROM new_item i
     LEFT JOIN prd.product_abbr_v p
       USING (product_id)

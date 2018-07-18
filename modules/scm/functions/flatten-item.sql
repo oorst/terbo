@@ -1,97 +1,70 @@
-CREATE OR REPLACE FUNCTION scm.flatten_item (json, fresh boolean DEFAULT FALSE)
-RETURNS TABLE (
-  item_uuid uuid,
-  parent_uuid uuid,
-  code text,
-  id text,
-  data json,
-  boq json,
-  attributes json,
-  items json,
-  depth integer
-) AS
-$$
-BEGIN
-  RETURN QUERY
-  WITH RECURSIVE item (item_uuid, parent_uuid, code, id, data, boq, attributes, items, depth) AS (
-    SELECT
-      CASE
-        WHEN fresh IS TRUE THEN
-          uuid_generate_v4()
-        ELSE COALESCE(($1->>'uuid')::uuid, uuid_generate_v4())
-      END AS item_uuid,
-      NULL::uuid AS parent_uuid, -- Root items must not have a parent_uuid, hence the NULL
-      $1->>'code',
-      $1->>'id',
-      $1->'data',
-      $1->'boq',
-      $1->'attributes',
-      $1->'items',
-      0 depth
-
-    UNION ALL
-
-    SELECT
-      CASE
-        WHEN fresh IS TRUE THEN
-          uuid_generate_v4()
-        ELSE COALESCE(i.uuid, uuid_generate_v4())
-      END AS item_uuid,
-      item.item_uuid AS parent_uuid,
-      i.code,
-      i.id,
-      i.data,
-      i.boq,
-      i.attributes,
-      i.items,
-      item.depth + 1
-    FROM item
-    CROSS JOIN json_to_recordset(item.items) AS i(
-        uuid uuid,
-        parent_uuid uuid,
-        code text,
-        id text,
-        data json,
-        boq json,
-        attributes json,
-        items json
-      )
-    WHERE json_typeof(item.items) = 'array'
-  )
-  SELECT *
-  FROM item;
-END
-$$
-LANGUAGE 'plpgsql';
-
 CREATE OR REPLACE FUNCTION scm.flatten_item (uuid)
 RETURNS TABLE (
   item_uuid uuid,
-  parent_uuid uuid,
-  product_id integer
+  product_id  integer,
+  type        scm_item_t,
+  name        text,
+  data        jsonb,
+  explode     integer,
+  route_id    integer,
+  gross       numeric(10,2),
+  net         numeric(10,2),
+  weight      numeric(10,2),
+  created     timestamp,
+  end_at      timestamp,
+  modified    timestamp,
+  quantity    numeric(10,3),
+  parent_uuid uuid
 ) AS
 $$
 BEGIN
   RETURN QUERY
-  WITH RECURSIVE item (item_uuid, parent_uuid, product_id) AS (
+  WITH RECURSIVE item AS (
     SELECT
-      item.item_uuid,
-      item.parent_uuid,
-      item.product_id
-    FROM scm.item item
-    WHERE item.item_uuid = $1
+      i.item_uuid,
+      i.product_id,
+      i.type,
+      i.name,
+      i.data,
+      i.explode,
+      i.route_id,
+      i.gross,
+      i.net,
+      i.weight,
+      i.created,
+      i.end_at,
+      i.modified,
+      1::numeric(10,3) AS quantity,
+      NULL::uuid AS parent_uuid
+    FROM scm.item i
+    WHERE i.item_uuid = $1
 
     UNION ALL
 
     SELECT
-      i.item_uuid,
-      i.parent_uuid,
-      i.product_id
-    FROM item
-    INNER JOIN scm.item i
-      ON item.item_uuid = i.parent_uuid
+      child.item_uuid,
+      i.product_id,
+      i.type,
+      i.name,
+      i.data,
+      i.explode,
+      i.route_id,
+      i.gross,
+      i.net,
+      i.weight,
+      i.created,
+      i.end_at,
+      i.modified,
+      (item.quantity * coalesce(child.quantity, 1.000))::numeric(10,3) AS quantity,
+      item.item_uuid AS parent_uuid
+    FROM scm.sub_assembly child
+    INNER JOIN item
+      ON item.item_uuid = child.parent_uuid
+    LEFT JOIN scm.item i
+      ON i.item_uuid = child.item_uuid
   )
-  SELECT *
+  SELECT
+    *
   FROM item;
 END
 $$

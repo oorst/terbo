@@ -10,12 +10,12 @@ BEGIN
 
   EXECUTE (
     SELECT
-      format('UPDATE scm.item SET (%s) = (%s) WHERE item_uuid = ''%s''', c.column, c.value, c.uuid)
+      format('UPDATE scm.item SET (%s) = (%s) WHERE item_uuid = ''%s''', c.column, c.value, c.item_uuid)
     FROM (
       SELECT
         string_agg(q.column, ', ') AS column,
         string_agg(q.value, ', ') AS value,
-        ($1->>'uuid')::uuid AS uuid
+        ($1->>'uuid')::uuid AS item_uuid
       FROM (
         SELECT
           CASE p.key

@@ -5,4 +5,6 @@
 \ir get-organisation.sql
 \ir get-party.sql
 \ir get-person.sql
+\ir list-party.sql
 \ir search-party.sql
+\ir core-setting.sql
