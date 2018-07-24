@@ -9,5 +9,8 @@
 \ir get-uoms.sql
 \ir search.sql
 \ir current-cost.sql
-\ir composite-product-gross.sql
-\ir flatten-composite.sql
+\ir flatten-product.sql
+\ir create-component.sql
+\ir update-component.sql
+\ir product-gross.sql
+\ir get-line-item.sql

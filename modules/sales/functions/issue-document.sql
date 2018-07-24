@@ -6,12 +6,12 @@ BEGIN
       issued_at,
       status
     ) = (
-      LOCALTIMESTAMP,
+      CURRENT_TIMESTAMP,
       'ISSUED'
     )
     WHERE d.document_id = ($1->>'id')::integer
   )
-  SELECT '{ "ok": true }' INTO result;
+  SELECT format('{ "id": %s, "ok": true }', ($1->>'id')::integer) INTO result;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

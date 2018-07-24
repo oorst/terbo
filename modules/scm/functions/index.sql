@@ -21,3 +21,4 @@
 \ir search-tasks.sql
 \ir update-subassembly.sql
 \ir delete-subassembly.sql
+\ir get-line-item.sql

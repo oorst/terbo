@@ -166,12 +166,13 @@ CREATE SCHEMA scm
       i.type,
       i.name,
       p.product_id,
-      p.name AS product_name,
-      fam.name AS product_family_name,
-      COALESCE(i.name, p.name, fam.name) AS _name,
-      p.code AS product_code,
-      fam.code AS product_family_code,
-      coalesce(p.code, fam.code) AS _code
+      p.type AS product_type,
+      p.sku,
+      COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS "$code",
+      COALESCE(p.name, fam.name) AS "$name",
+      COALESCE(p.description, fam.description) AS "$description",
+      p.created,
+      p.modified
     FROM scm.item i
     LEFT JOIN prd.product p
       USING (product_id)

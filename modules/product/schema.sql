@@ -162,7 +162,6 @@ CREATE SCHEMA prd
   CREATE OR REPLACE VIEW product_abbr_v AS
     SELECT
       p.product_id,
-      p.uuid,
       p.type,
       COALESCE(p.code, fam.code) AS code,
       COALESCE(p.sku, fam.sku) AS sku,
@@ -193,7 +192,6 @@ CREATE SCHEMA prd
   CREATE OR REPLACE VIEW product_v AS
     SELECT
       p.product_id,
-      p.uuid,
       p.family_id,
       p.manufacturer_id,
       p.manufacturer_code,
@@ -268,3 +266,76 @@ CREATE SCHEMA prd
       ON price.product_id = p.product_id
     LEFT JOIN prd.markup markup
       ON markup.markup_id = price.markup_id; -- end CREATE SCHEMA prd
+
+--
+-- Triggers
+--
+
+-- Update modified column automatically and update parents
+CREATE OR REPLACE FUNCTION prd.product_update_tg () RETURNS TRIGGER AS
+$$
+DECLARE
+  now timestamp := CURRENT_TIMESTAMP;
+BEGIN
+  SELECT now INTO NEW.modified;
+
+  -- Update parent products
+  UPDATE prd.product p SET (
+    modified
+  ) = (
+    now
+  )
+  FROM prd.component c
+  WHERE p.product_id = c.parent_id AND c.product_id = NEW.product_id;
+
+  RETURN NEW;
+END
+$$
+LANGUAGE 'plpgsql';
+
+CREATE TRIGGER product_update_tg BEFORE UPDATE ON prd.product
+  FOR EACH ROW EXECUTE PROCEDURE prd.product_update_tg();
+
+-- Update parents on component update
+CREATE OR REPLACE FUNCTION prd.component_update_tg () RETURNS TRIGGER AS
+$$
+BEGIN
+  -- Update parent products
+  UPDATE prd.product p SET (
+    modified
+  ) = (
+    CURRENT_TIMESTAMP
+  )
+  FROM prd.component c
+  WHERE p.product_id = c.product_id AND c.component_id = NEW.component_id;
+
+  RETURN NEW;
+END
+$$
+LANGUAGE 'plpgsql';
+
+CREATE TRIGGER product_update_tg BEFORE UPDATE ON prd.component
+  FOR EACH ROW EXECUTE PROCEDURE prd.component_update_tg();
+
+-- Update products when cost or pricing has changed
+CREATE OR REPLACE FUNCTION prd.price_cost_insert_tg () RETURNS TRIGGER AS
+$$
+BEGIN
+  -- Update parent products
+  UPDATE prd.product p SET (
+    modified
+  ) = (
+    CURRENT_TIMESTAMP
+  )
+  WHERE p.product_id = NEW.product_id;
+
+  RETURN NEW;
+END
+$$
+LANGUAGE 'plpgsql';
+
+CREATE TRIGGER price_insert_tg AFTER INSERT ON prd.price
+  FOR EACH ROW EXECUTE PROCEDURE prd.price_cost_insert_tg();
+
+CREATE TRIGGER cost_insert_tg AFTER INSERT ON prd.cost
+  FOR EACH ROW EXECUTE PROCEDURE prd.price_cost_insert_tg();

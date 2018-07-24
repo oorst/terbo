@@ -5,7 +5,6 @@ BEGIN
   FROM (
     SELECT
       pr.product_id AS id,
-      pr.uuid,
       pr.type,
       pr.code,
       pr.sku,

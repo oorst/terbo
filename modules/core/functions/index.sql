@@ -8,3 +8,4 @@
 \ir list-party.sql
 \ir search-party.sql
 \ir core-setting.sql
+\ir update-modified.sql

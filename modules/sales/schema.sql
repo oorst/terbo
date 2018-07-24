@@ -7,24 +7,24 @@ CREATE SCHEMA sales
   CREATE TABLE source_document (
     document_id  serial PRIMARY KEY,
     issued_to    integer NOT NULL REFERENCES party (party_id) ON DELETE SET NULL,
+    contact_id   integer NOT NULL REFERENCES person (party_id) ON DELETE SET NULL,
     data         jsonb,
     status       document_status_t DEFAULT 'DRAFT',
-    issued_at    timestamp,
     created_by   integer NOT NULL REFERENCES person (party_id) ON DELETE SET NULL,
-    created      timestamp DEFAULT CURRENT_TIMESTAMP
+    created      timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified     timestamp
   )
 
   CREATE TABLE invoice (
     invoice_id     serial PRIMARY KEY,
     invoice_num    text,
     document_id    integer REFERENCES source_document (document_id) ON DELETE RESTRICT,
-    -- Invoices are issued to a Party
-    issued_to      integer,
     -- Local time
+    period         integer NOT NULL DEFAULT 30,
     due_date       timestamp,
-    status         invoice_status_t DEFAULT 'draft',
     payment_status pmt_status_t DEFAULT 'owing',
-    issued_at      timestamp DEFAULT CURRENT_TIMESTAMP,
+    notes          text,
+    issued_at      timestamp,
     created        timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
@@ -38,9 +38,12 @@ CREATE SCHEMA sales
   CREATE TABLE quote (
     document_id integer REFERENCES sales.source_document (document_id) ON DELETE CASCADE,
     quote_num   text,
-    contact_id  integer NOT NULL REFERENCES party (party_id) ON DELETE SET NULL,
     period      integer NOT NULL DEFAULT 30,
     expiry_date date,
+    notes       text,
+    issued_at   timestamp,
+    created     timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified    timestamp,
     PRIMARY KEY (document_id)
   )
 
@@ -52,7 +55,11 @@ CREATE SCHEMA sales
   )
 
   CREATE TABLE line_item (
+    line_item_id    serial PRIMARY KEY,
     document_id     integer REFERENCES source_document (document_id) ON DELETE CASCADE,
+    product_id      integer REFERENCES product (product_id) ON DELETE RESTRICT,
+    -- The order in which the line items appear in a document
+    position        smallint,
     code            text,
     name            text,
     description     text,
@@ -74,12 +81,78 @@ CREATE SCHEMA sales
     note            text,
     note_importance li_note_importance_t DEFAULT 'normal',
     created         timestamp DEFAULT CURRENT_TIMESTAMP
+  )
+
+  CREATE VIEW invoice_v AS
+    SELECT
+      i.*,
+      d.issued_to,
+      d.contact_id,
+      d.data,
+      d.status,
+      d.created_by
+    FROM invoice i
+    INNER JOIN source_document d
+      USING (document_id)
+
+  CREATE VIEW quote_v AS
+    SELECT
+      q.*,
+      d.issued_to,
+      d.contact_id,
+      d.data,
+      d.status,
+      d.created_by
+    FROM quote q
+    INNER JOIN source_document d
+      USING (document_id);
+
+--
+-- Rules
+--
+
+CREATE OR REPLACE RULE sales_invoice_v_update AS ON UPDATE TO sales.invoice_v
+  DO INSTEAD (
+    -- Update source first, trigger should throw exception here if update not allowed
+    UPDATE sales.source_document d
+    SET
+      contact_id = NEW.contact_id,
+      status = NEW.status,
+      data = NEW.data
+    WHERE d.document_id = NEW.document_id;
+
+    UPDATE sales.invoice i
+    SET
+      issued_at = NEW.issued_at,
+      period = NEW.period,
+      due_date = NEW.due_date,
+      notes = NEW.notes
+    WHERE i.document_id = NEW.document_id;
+  );
+
+CREATE RULE sales_quote_v_update AS ON UPDATE TO sales.quote_v
+  DO INSTEAD (
+    -- Update source first, trigger should throw exception here if update not allowed
+    UPDATE sales.source_document d
+    SET
+      contact_id = NEW.contact_id,
+      status = NEW.status,
+      data = NEW.data
+    WHERE d.document_id = NEW.document_id;
+
+    UPDATE sales.quote q
+    SET
+      issued_at = NEW.issued_at,
+      period = NEW.period,
+      expiry_date = NEW.expiry_date,
+      notes = NEW.notes
+    WHERE q.document_id = NEW.document_id;
   );
 
 --
 -- Triggers
 --
-CREATE FUNCTION sales.document_tg() RETURNS trigger AS
+CREATE FUNCTION sales.source_document_upd_tg() RETURNS trigger AS
 $$
 BEGIN
   IF OLD.status != 'DRAFT' THEN
@@ -87,17 +160,28 @@ BEGIN
       USING HINT = 'only drafts can be updated', ERRCODE = 'U0004';
   END IF;
 
-  -- Return the new row
+  SELECT CURRENT_TIMESTAMP INTO NEW.modified;
+
   RETURN NEW;
 END
 $$
 LANGUAGE 'plpgsql';
 
-CREATE TRIGGER sales_document_tg BEFORE UPDATE ON sales.source_document
-    FOR EACH ROW EXECUTE PROCEDURE sales.document_tg();
+CREATE FUNCTION sales.document_upd_tg() RETURNS trigger AS
+$$
+BEGIN
+  SELECT CURRENT_TIMESTAMP INTO NEW.modified;
 
-CREATE TRIGGER sales_invoice_tg BEFORE UPDATE ON sales.invoice
-    FOR EACH ROW EXECUTE PROCEDURE sales.document_tg();
+  RETURN NEW;
+END
+$$
+LANGUAGE 'plpgsql';
 
-CREATE TRIGGER sales_quote_tg BEFORE UPDATE ON sales.quote
-    FOR EACH ROW EXECUTE PROCEDURE sales.document_tg();
+CREATE TRIGGER sales_source_document_upd_tg BEFORE UPDATE ON sales.source_document
+  FOR EACH ROW EXECUTE PROCEDURE sales.source_document_upd_tg();
+
+CREATE TRIGGER sales_invoice_upd_tg BEFORE UPDATE ON sales.invoice
+  FOR EACH ROW EXECUTE PROCEDURE update_modified_tg();
+
+CREATE TRIGGER sales_quote_upd_tg BEFORE UPDATE ON sales.quote
+  FOR EACH ROW EXECUTE PROCEDURE update_modified_tg();

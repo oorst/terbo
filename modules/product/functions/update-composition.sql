@@ -7,7 +7,7 @@ DECLARE
 BEGIN
   -- Must provide a parent product id
   IF $1->'parentId' IS NULL THEN
-    RAISE EXCEPTION 'must provide a parent id';
+    RAISE EXCEPTION 'must provide a parentId';
   END IF;
 
   -- If compositionId is null, then create a new composition and update the

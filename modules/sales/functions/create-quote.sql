@@ -49,23 +49,23 @@ BEGIN
   document AS (
     INSERT INTO sales.source_document (
       issued_to,
-      created_by
+      created_by,
+      contact_id
     )
     SELECT
       issued_to,
-      created_by
+      created_by,
+      contact_id
     FROM payload
     RETURNING *
   ), quote AS (
     INSERT INTO sales.quote (
       document_id,
-      expiry_date,
-      contact_id
+      expiry_date
     )
     SELECT
       d.document_id,
-      (current_date + COALESCE(p.period, 30))::date AS expiry_date,
-      p.contact_id
+      (current_date + COALESCE(p.period, 30))::date AS expiry_date
     FROM document d
     CROSS JOIN payload p
     RETURNING *
