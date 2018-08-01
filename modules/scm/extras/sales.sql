@@ -8,9 +8,9 @@ Allows Items to appear on sales documents.
 -- item instance.
 ALTER TABLE sales.line_item ADD COLUMN item_uuid uuid REFERENCES scm.item (item_uuid);
 
--- The following functions replaces the sales.get_quote and calculates the
+-- The following function replaces the sales.get_quote and calculates the
 -- gross price where a sales.line_item points to an scm.item
-CREATE OR REPLACE FUNCTION sales.get_quote (integer, OUT result json) AS
+CREATE OR REPLACE FUNCTION sales.get_document (integer, OUT result json) AS
 $$
 BEGIN
   WITH document AS (
@@ -20,16 +20,41 @@ BEGIN
       d.issued_to,
       d.created_by,
       d.contact_id,
-      q.issued_at,
-      q.expiry_date,
-      q.period,
-      q.notes,
-      d.created
+      CASE
+        WHEN q IS NULL THEN i.issued_at
+        ELSE q.issued_at
+      END AS issued_at,
+      CASE
+        WHEN q IS NULL THEN i.due_date
+        ELSE NULL
+      END AS due_date,
+      CASE
+        WHEN q IS NULL THEN NULL
+        ELSE q.expiry_date
+      END AS expiry_date,
+      CASE
+        WHEN q IS NULL THEN i.period
+        ELSE q.period
+      END AS period,
+      CASE
+        WHEN q IS NULL THEN i.notes
+        ELSE q.notes
+      END AS notes,
+      CASE
+        WHEN q IS NULL THEN i.created
+        ELSE q.created
+      END AS created,
+      CASE
+        WHEN q IS NULL THEN 'INVOICE'
+        ELSE 'QUOTE'
+      END AS document_type
     FROM sales.source_document d
     INNER JOIN person prsn
       ON prsn.party_id = d.created_by
-    INNER JOIN sales.quote q
-      USING (document_id)
+    LEFT JOIN sales.quote q
+      ON q.document_id = d.document_id
+    LEFT JOIN sales.invoice i
+      ON i.document_id = d.document_id
     WHERE d.document_id = $1
   ), line_item AS (
     SELECT
@@ -39,7 +64,7 @@ BEGIN
       li.item_uuid AS "itemUuid",
       li.position,
       coalesce(li.code, p._code) AS code,
-      coalesce(li.name, p._name) AS name,
+      coalesce(li.name, i.name, p._name) AS name,
       coalesce(li.description, p._description) AS description,
       uom.name AS "uomName",
       uom.abbr AS "uomAbbr",
@@ -58,6 +83,8 @@ BEGIN
       USING (document_id)
     LEFT JOIN prd.product_list_v p
       USING (product_id)
+    LEFT JOIN scm.item i
+      USING (item_uuid)
     LEFT JOIN prd.product pp
       ON pp.product_id = li.product_id
     LEFT JOIN prd.uom uom
@@ -68,12 +95,14 @@ BEGIN
   FROM (
     SELECT
       document.document_id AS "documentId",
+      document.document_type AS "documentType",
       party_v.name AS "issuedToName",
       party_v.type AS "issuedToType",
       document.status,
       document.created::date AS "createdDate",
       document.issued_at::date AS "issueDate",
       document.expiry_date AS "expiryDate",
+      document.due_date AS "dueDate",
       document.period,
       document.notes,
       coalesce(contactPerson.name, contact.name) AS "issuedToContactName",
@@ -121,6 +150,44 @@ BEGIN
   WHERE q.document_id = ($1->>'documentId')::integer;
 
   SELECT sales.get_quote(($1->>'documentId')::integer) INTO result;
+END
+$$
+LANGUAGE 'plpgsql' SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION sales.issue_invoice (json, OUT result json) AS
+$$
+BEGIN
+  IF $1->>'documentId' IS NULL THEN
+    RAISE EXCEPTION 'must provide documentId to issue invoice';
+  END IF;
+
+  -- Ensure that the line_item_gross is set where line_items point to
+  -- scm.item
+  UPDATE sales.line_item li SET (
+    gross
+  ) = (
+    CASE
+      WHEN li.gross IS NULL AND li.item_uuid IS NOT NULL THEN
+        (SELECT sum(line_total) FROM scm.item_boq(li.item_uuid))
+      WHEN li.gross IS NULL THEN
+         prd.product_gross(li.product_id)
+      ELSE li.gross
+    END
+  )
+  WHERE li.document_id = ($1->>'documentId')::integer;
+
+  UPDATE sales.invoice_v i SET (
+    issued_at,
+    status,
+    due_date
+  ) = (
+    CURRENT_TIMESTAMP,
+    'ISSUED',
+    (CURRENT_TIMESTAMP + (INTERVAL '1 day') * i.period)::date
+  )
+  WHERE i.document_id = ($1->>'documentId')::integer;
+
+  SELECT sales.get_invoice(($1->>'documentId')::integer) INTO result;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

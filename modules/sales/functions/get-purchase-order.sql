@@ -1,7 +1,21 @@
-CREATE OR REPLACE FUNCTION sales.get_invoice (integer, OUT result json) AS
+CREATE OR REPLACE FUNCTION sales.get_purchase_order (integer, OUT result json) AS
 $$
 BEGIN
-  WITH line_item AS (
+  WITH document AS (
+    SELECT
+      d.document_id,
+      d.status,
+      d.issued_to,
+      d.created_by,
+      d.contact_id,
+      po.issued_at,
+      po.notes,
+      d.created
+    FROM sales.source_document d
+    INNER JOIN sales.purchase_order po
+      USING (document_id)
+    WHERE d.document_id = $1
+  ), line_item AS (
     SELECT
       li.line_item_id AS "lineItemId",
       li.document_id AS "documentId",
@@ -13,9 +27,7 @@ BEGIN
       uom.name AS "uomName",
       uom.abbr AS "uomAbbr",
       li.data,
-      li.quantity,
-      li.gross,
-      coalesce(li.gross, prd.product_gross(p.product_id)) AS "$gross"
+      li.quantity
     FROM sales.line_item li
     LEFT JOIN prd.product_list_v p
       USING (product_id)
@@ -25,24 +37,6 @@ BEGIN
       ON uom.uom_id = pp.uom_id
     WHERE document_id = $1
     ORDER BY position, line_item_id
-  ), document AS (
-    SELECT
-      d.document_id,
-      d.status,
-      d.created_by,
-      d.issued_to,
-      d.contact_id,
-      i.issued_at,
-      i.due_date,
-      i.period,
-      i.notes,
-      d.created
-    FROM sales.source_document d
-    INNER JOIN person prsn
-      ON prsn.party_id = d.created_by
-    INNER JOIN sales.invoice i
-      USING (document_id)
-    WHERE d.document_id = $1
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
@@ -53,8 +47,6 @@ BEGIN
       document.status,
       document.created::date AS "createdDate",
       document.issued_at::date AS "issueDate",
-      document.due_date AS "dueDate",
-      document.period,
       document.notes,
       coalesce(contactPerson.name, contact.name) AS "issuedToContactName",
       contactPerson.email AS "issuedToContactEmail",
@@ -77,10 +69,13 @@ END
 $$
 LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION sales.get_invoice (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION sales.get_purchase_order (json, OUT result json) AS
 $$
 BEGIN
-  SELECT sales.get_invoice(($1->>'documentId')::integer) INTO result;
+  SELECT
+    sales.get_purchase_order(po.document_id) INTO result
+  FROM sales.purchase_order po
+  WHERE po.document_id = ($1->>'documentId')::integer;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

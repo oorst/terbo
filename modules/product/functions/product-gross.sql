@@ -20,7 +20,7 @@ BEGIN
       ON c.parent_id = p.product_id
   )
   SELECT
-    sum(coalesce(price.gross, cost.amount * (1 + price.markup / 100.00)))::numeric(10,2) INTO result
+    sum(coalesce(price.gross, cost.amount * (1 + price.markup / 100.00)) * product.quantity)::numeric(10,2) INTO result
   FROM product
   LEFT JOIN (
     SELECT DISTINCT ON (cost.product_id)

@@ -32,22 +32,24 @@ CREATE SCHEMA scm
   -- Item uses a UUID primary key so that functions can be used across the Item
   -- table and the item instance table
   CREATE TABLE item (
-    item_uuid   uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    product_id  integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
+    item_uuid      uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    product_id     integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
     -- Identifier, should be unique amongst sub items
-    type        scm_item_t,
-    name        text,
-    data        jsonb,
+    type           scm_item_t,
+    prototype_uuid uuid REFERENCES item (item_uuid) ON DELETE RESTRICT
+    name           text,
+    data           jsonb,
+    attributes     jsonb,
     -- Explode composite products when generating bill of quanitities etc
-    explode     integer DEFAULT 1,
-    route_id    integer REFERENCES route (route_id) ON DELETE SET NULL,
+    explode        integer DEFAULT 1,
+    route_id       integer REFERENCES route (route_id) ON DELETE SET NULL,
     -- A set price takes precedence over a calculated price
-    gross       numeric(10,2),
-    net         numeric(10,2),
-    weight      numeric(10,3),
-    created     timestamp DEFAULT CURRENT_TIMESTAMP,
-    end_at      timestamp,
-    modified    timestamp DEFAULT CURRENT_TIMESTAMP
+    gross          numeric(10,2),
+    net            numeric(10,2),
+    weight         numeric(10,3),
+    created        timestamp DEFAULT CURRENT_TIMESTAMP,
+    end_at         timestamp,
+    modified       timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
   CREATE TABLE sub_assembly (

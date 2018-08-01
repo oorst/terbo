@@ -1,6 +1,13 @@
 \ir create-quote.sql
 \ir get-quote.sql
 \ir get-invoice.sql
+\ir get-purchase-order.sql
+\ir list-invoices.sql
+\ir list-order.sql
 \ir list-quotes.sql
+\ir list-purchase-orders.sql
 \ir issue-quote.sql
 \ir create-line-item.sql
+\ir update-invoice.sql
+\ir update-purchase-order.sql
+\ir update-quote.sql

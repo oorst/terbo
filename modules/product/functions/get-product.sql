@@ -14,6 +14,7 @@ BEGIN
       -- Family
       fam.name AS "familyName",
       coalesce(pr.name, fam.name) AS "$name",
+      coalesce(pr.sku, pr.code, pr.supplier_code, pr.manufacturer_code) AS "$code",
       fam.code AS "familyCode",
       fam.manufacturer_code AS "familyManufacturerCode",
       fam.supplier_code AS "familySupplierCode",
@@ -107,7 +108,7 @@ BEGIN
       ) AS components,
       -- Pricing
       coalesce(
-        prd.composite_product_gross(pr.product_id),
+        prd.product_gross(pr.product_id),
         price.gross,
         cost.amount * (1 + (coalesce(price.markup, markup.amount)) / 100.00)
       )::numeric(10,2) AS "$gross",

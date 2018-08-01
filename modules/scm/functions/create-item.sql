@@ -73,7 +73,8 @@ BEGIN
       p.product_id AS "productId",
       p.name AS "productName",
       s.parent_uuid AS "parentUuid",
-      s.root_uuid AS "rootUuid"
+      s.root_uuid AS "rootUuid",
+      s.sub_assembly_id AS "subAssemblyId"
     FROM new_item i
     LEFT JOIN prd.product_abbr_v p
       USING (product_id)

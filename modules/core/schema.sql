@@ -54,6 +54,7 @@ CREATE TABLE organisation (
   address_id         integer REFERENCES address (address_id) ON DELETE SET NULL,
   billing_address_id integer REFERENCES address (address_id) ON DELETE SET NULL,
   url                text,
+  industry_code      text,
   data               jsonb,
   created            timestamp DEFAULT CURRENT_TIMESTAMP
 );
