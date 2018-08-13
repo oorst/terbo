@@ -5,17 +5,18 @@ BEGIN
   FROM (
     SELECT
       o.order_id AS "orderId",
-      o.status
+      o.status,
+      buyer.name
     FROM sales.order o
+    INNER JOIN party_v buyer
+      ON buyer.party_id = o.buyer_id
     WHERE to_tsvector(
       concat_ws(' ',
-        o.buyer_id,
-        o.created_by
+        buyer.name
       )
     ) @@ plainto_tsquery(
       concat_ws(' ',
-        $1->>'search',
-        $1->>'userId'
+        $1->>'search'
       )
     )
   ) r;
