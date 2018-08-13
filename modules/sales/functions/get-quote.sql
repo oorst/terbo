@@ -3,26 +3,26 @@ $$
 BEGIN
   WITH document AS (
     SELECT
-      d.document_id,
-      d.status,
-      d.issued_to,
-      d.created_by,
-      d.contact_id,
+      o.order_id,
+      o.buyer_id,
+      o.created AS order_created,
+      o.created_by AS order_created_by,
+      q.quote_id,
+      q.status,
+      q.contact_id,
       q.issued_at,
       q.expiry_date,
       q.period,
       q.notes,
-      d.created
-    FROM sales.source_document d
-    INNER JOIN person prsn
-      ON prsn.party_id = d.created_by
+      q.created,
+      q.created_by
+    FROM sales.order o
     INNER JOIN sales.quote q
-      USING (document_id)
-    WHERE d.document_id = $1
+      USING (order_id)
+    WHERE q.order_id = $1
   ), line_item AS (
     SELECT
       li.line_item_id AS "lineItemId",
-      li.document_id AS "documentId",
       li.product_id AS "productId",
       li.position,
       coalesce(li.code, p._code) AS code,
@@ -41,15 +41,18 @@ BEGIN
       ON pp.product_id = li.product_id
     LEFT JOIN prd.uom uom
       ON uom.uom_id = pp.uom_id
-    WHERE document_id = $1
+    WHERE li.quote_id = $1
     ORDER BY position, line_item_id
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      document.document_id AS "documentId",
-      party_v.name AS "issuedToName",
-      party_v.type AS "issuedToType",
+      document.order_id AS "orderId",
+      document.quote_id AS "quoteId",
+      buyer.name AS "buyerName",
+      buyer.type AS "buyerType",
+      document.order_created AS "orderCreated",
+      document.order_created_by AS "orderCreatedBy",
       document.status,
       document.created::date AS "createdDate",
       document.issued_at::date AS "issueDate",
@@ -64,8 +67,8 @@ BEGIN
       p.phone AS "createdByPhone",
       (SELECT json_agg(l) FROM line_item l) AS "lineItems"
     FROM document
-    INNER JOIN party_v
-      ON party_v.party_id = document.issued_to
+    INNER JOIN party_v buyer
+      ON buyer.party_id = document.buyer_id
     LEFT JOIN party_v contact
       ON contact.party_id = document.contact_id
     LEFT JOIN person contactPerson
@@ -81,9 +84,11 @@ CREATE OR REPLACE FUNCTION sales.get_quote (json, OUT result json) AS
 $$
 BEGIN
   SELECT
-    sales.get_quote(q.document_id) INTO result
+    sales.get_quote(q.quote_id) INTO result
   FROM sales.quote q
-  WHERE q.document_id = ($1->>'documentId')::integer OR q.quote_num = $1->>'quoteNum';
+  WHERE q.quote_id = ($1->>'quoteId')::integer;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;
+
+COMMENT ON FUNCTION sales.get_quote(integer) IS 'This function replaced replaced by the Massey Schema';

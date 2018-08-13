@@ -1,8 +1,51 @@
 CREATE SCHEMA prj
+  CREATE TABLE job (
+    job_id          serial PRIMARY KEY,
+    prerequisite_id integer REFERENCES job (job_id) ON DELETE CASCADE,
+    parent_id       integer REFERENCES job (job_id) ON DELETE CASCADE,
+    dependency_id   integer REFERENCES job (job_id) ON DELETE CASCADE,
+    name            text,
+    short_desc      text,
+    product_id      integer REFERENCES prd.product (product_id),
+    lag             interval,
+    lead            interval,
+    created_by      integer REFERENCES person (party_id) ON DELETE SET NULL,
+    created         timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified        timestamp DEFAULT CURRENT_TIMESTAMP
+  )
+
   CREATE TABLE project (
     project_id serial PRIMARY KEY,
+    job_id     integer REFERENCES job (job_id) ON DELETE CASCADE,
+    address_id integer REFERENCES full_address (address_id) ON DELETE SET NULL,
     owner_id   integer REFERENCES party (party_id) ON DELETE SET NULL,
-    created    timestamp DEFAULT CURRENT_TIMESTAMP
+    name       text,
+    nickname   text,
+    created_by integer REFERENCES person (party_id) ON DELETE SET NULL,
+    created    timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified   timestamp DEFAULT CURRENT_TIMESTAMP
+  )
+
+  CREATE TABLE project_job (
+    project_id integer REFERENCES project (project_id),
+    job_id     integer REFERENCES job (job_id),
+    PRIMARY KEY (project_id)
+  )
+
+  CREATE TABLE project_role (
+    project_id integer REFERENCES project (project_id),
+    party_id   integer REFERENCES person (party_id)
+  )
+
+  CREATE TABLE boq_line_item (
+    boq_line_item_id serial PRIMARY KEY,
+    job_id           integer REFERENCES job (job_id) ON DELETE CASCADE,
+    product_id       integer REFERENCES prd.product (product_id) ON DELETE SET NULL,
+    uom_id           integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
+    quantity         numeric(10,3),
+    created_by       integer REFERENCES person (party_id) ON DELETE SET NULL,
+    created          timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified         timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
   CREATE TABLE deliverable (
@@ -23,64 +66,3 @@ CREATE SCHEMA prj
     status         integer,
     created        timestamp DEFAULT CURRENT_TIMESTAMP
   );
-
---
--- Functions
---
-
-CREATE OR REPLACE FUNCTION prj._get_project (integer, OUT result json) AS
-$$
-BEGIN
-  SELECT to_json(r) INTO result
-  FROM (
-    SELECT
-      project_id AS "projectId",
-      get_full_address(project.address_id) AS "address",
-      get_party(project.owner_id) AS "owner",
-      created
-    FROM prj.project project
-    WHERE project.project_id = $1
-  ) r;
-END
-$$
-LANGUAGE 'plpgsql';
-
-CREATE OR REPLACE FUNCTION prj.get_project (json, OUT result json) AS
-$$
-BEGIN
-  SELECT prj._get_project(($1->>'projectId')::integer) INTO result;
-END
-$$
-LANGUAGE 'plpgsql' SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION prj._create_project (json, OUT result integer) AS
-$$
-BEGIN
-  INSERT INTO prj.project (
-    address_id,
-    owner_id
-  ) VALUES (
-    CASE
-      WHEN $1->>'addressId' IS NOT NULL THEN
-        ($1->>'addressId')::integer
-      WHEN $1->'address' IS NOT NULL THEN
-        _create_full_address($1->'address')
-    END,
-    CASE
-      WHEN $1->>'ownerId' IS NOT NULL THEN
-        ($1->>'ownerId')::integer
-      WHEN $1->'owner' IS NOT NULL THEN
-        _create_party($1->'owner')
-    END
-  ) RETURNING project_id INTO result;
-END
-$$
-LANGUAGE 'plpgsql';
-
-CREATE OR REPLACE FUNCTION prj.create_project (json, OUT result json) AS
-$$
-BEGIN
-  SELECT prj.get_project(prj._create_project($1)) INTO result;
-END
-$$
-LANGUAGE 'plpgsql' SECURITY DEFINER;

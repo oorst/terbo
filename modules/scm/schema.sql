@@ -36,7 +36,7 @@ CREATE SCHEMA scm
     product_id     integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
     -- Identifier, should be unique amongst sub items
     type           scm_item_t,
-    prototype_uuid uuid REFERENCES item (item_uuid) ON DELETE RESTRICT
+    prototype_uuid uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
     name           text,
     data           jsonb,
     attributes     jsonb,
@@ -171,11 +171,11 @@ CREATE SCHEMA scm
       p.type AS product_type,
       p.sku,
       COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS "$code",
-      COALESCE(p.name, fam.name) AS "$name",
+      COALESCE(i.name, p.name, fam.name) AS "$name",
       COALESCE(p.description, fam.description) AS "$description",
       p.created,
       p.modified
-    FROM scm.item i
+    FROM item i
     LEFT JOIN prd.product p
       USING (product_id)
     LEFT JOIN prd.product fam

@@ -1,27 +1,28 @@
 /*
 Create a dyamic query that only updates fileds that present on the payload
 */
-CREATE OR REPLACE FUNCTION scm.update_item (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION prj.update_project (json, OUT result json) AS
 $$
 BEGIN
-  IF $1->'itemUuid' IS NULL THEN
-    RAISE EXCEPTION 'itemUuid not provided';
+  IF $1->'projectId' IS NULL THEN
+    RAISE EXCEPTION 'projectId not provided';
   END IF;
 
   EXECUTE (
     SELECT
-      format('UPDATE scm.item SET (%s) = (%s) WHERE item_uuid = ''%s''', c.column, c.value, c.item_uuid)
+      format('UPDATE prj.project SET (%s) = (%s) WHERE project_id = ''%s''', c.column, c.value, c.project_id)
     FROM (
       SELECT
         string_agg(q.column, ', ') AS column,
         string_agg(q.value, ', ') AS value,
-        ($1->>'itemUuid')::uuid AS item_uuid
+        ($1->>'projectId')::integer AS project_id
       FROM (
         SELECT
-          CASE p.key
-            WHEN 'productId' THEN 'product_id'
-            ELSE p.key
-          END AS column,
+          p.key AS column,
+          -- CASE p.key
+          --   WHEN 'productId' THEN 'product_id'
+          --   ELSE p.key
+          -- END AS column,
           CASE
             -- check if it's a number
             WHEN p.value ~ '^\d+(.\d+)?$' THEN
@@ -31,15 +32,12 @@ BEGIN
             ELSE quote_literal(p.value)
           END AS value
         FROM json_each_text($1) p
-        WHERE p.key != 'itemUuid' AND p.key IN (
-          'name',
-          'gross'
-        )
+        WHERE p.key != 'projectId'
       ) q
     ) c
   );
 
-  SELECT format('{ "itemUuid": "%s", "ok": true }', $1->>'itemUuid')::json INTO result;
+  SELECT '{ "ok": true }'::json INTO result;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

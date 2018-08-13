@@ -1,9 +1,10 @@
+\ir create-order.sql
 \ir create-quote.sql
 \ir get-quote.sql
 \ir get-invoice.sql
 \ir get-purchase-order.sql
 \ir list-invoices.sql
-\ir list-order.sql
+\ir list-orders.sql
 \ir list-quotes.sql
 \ir list-purchase-orders.sql
 \ir issue-quote.sql

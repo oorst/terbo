@@ -1,0 +1,26 @@
+{
+  "title": "prj.replace_boq",
+  "description": "prj.replace_boq JSON payload schema",
+  "type": "object",
+  "properties": {
+    "jobId": {
+      "type": "integer"
+    },
+    "lineItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        },
+        "required": ["code", "quantity"]
+      }
+    }
+  },
+  "required": ["jobId", "lineItems"]
+}

@@ -1,0 +1,11 @@
+{
+  "title": "userId",
+  "description": "userId is required",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer"
+    }
+  },
+  "required": ["userId"]
+}

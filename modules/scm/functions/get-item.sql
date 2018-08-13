@@ -41,6 +41,7 @@ BEGIN
           WHERE ss.parent_uuid = i.item_uuid
         ) r
       ) AS "subAssemblies",
+      i.gross,
       (SELECT sum(line_total) from scm.item_boq(i.item_uuid)) AS "$gross"
     FROM scm.item i
     LEFT JOIN prd.product p

@@ -1,20 +1,20 @@
 CREATE TYPE document_status_t AS ENUM ('DRAFT', 'ISSUED', 'DELETED', 'VOID');
 CREATE TYPE invoice_status_t AS ENUM ('draft', 'issued', 'deleted', 'void');
-CREATE TYPE order_status_t AS ENUM ('ESTIMATE', 'QUOTE', 'RECEIVED', 'PENDING', 'FULFILLED', 'DELIVERED');
+CREATE TYPE order_status_t AS ENUM ('RECEIVED', 'PENDING', 'FULFILLED', 'DELIVERED');
 CREATE TYPE pmt_status_t AS ENUM ('owing', 'paid');
 CREATE TYPE li_note_importance_t AS ENUM ('normal', 'important');
 
 CREATE SCHEMA sales
-  CREATE TABLE source_document (
-    document_id  serial PRIMARY KEY,
-    issued_to    integer NOT NULL REFERENCES party (party_id) ON DELETE SET NULL,
-    contact_id   integer NOT NULL REFERENCES person (party_id) ON DELETE SET NULL,
-    data         jsonb,
-    status       document_status_t DEFAULT 'DRAFT',
-    created_by   integer NOT NULL REFERENCES person (party_id) ON DELETE SET NULL,
-    created      timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified     timestamp
-  )
+  -- CREATE TABLE source_document (
+  --   document_id  serial PRIMARY KEY,
+  --   issued_to    integer NOT NULL REFERENCES party (party_id) ON DELETE SET NULL,
+  --   contact_id   integer NOT NULL REFERENCES person (party_id) ON DELETE SET NULL,
+  --   data         jsonb,
+  --   status       document_status_t DEFAULT 'DRAFT',
+  --   created_by   integer NOT NULL REFERENCES person (party_id) ON DELETE SET NULL,
+  --   created      timestamp DEFAULT CURRENT_TIMESTAMP,
+  --   modified     timestamp
+  -- )
 
   CREATE TABLE order (
     order_id            serial PRIMARY KEY,
@@ -22,14 +22,15 @@ CREATE SCHEMA sales
     delivery_address_id integer REFERENCES address (address_id) ON DELETE SET NULL,
     status              order_status_t DEFAULT 'PENDING',
     created             timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by          integer REFERENCES person (party_id)
+    created_by          integer REFERENCES person (party_id) NOT NULL
   )
 
   CREATE TABLE invoice (
     invoice_id     serial PRIMARY KEY,
     invoice_num    text,
     document_id    integer REFERENCES source_document (document_id) ON DELETE RESTRICT,
-    order_id       integer REFERENCES order (order_id) ON DELETE RESTRICT,
+    order_id       integer REFERENCES sales.order (order_id) ON DELETE RESTRICT,
+    contact_id     integer REFERENCES person (party_id) ON DELETE SET NULL,
     -- Local time
     period         integer NOT NULL DEFAULT 30,
     due_date       timestamp,
@@ -37,6 +38,7 @@ CREATE SCHEMA sales
     notes          text,
     issued_at      timestamp,
     created        timestamp DEFAULT CURRENT_TIMESTAMP,
+    created_by     integer REFERENCES person (party_id) NOT NULL,
     modified       timestamp
   )
 
@@ -48,15 +50,17 @@ CREATE SCHEMA sales
   )
 
   CREATE TABLE quote (
-    document_id integer REFERENCES source_document (document_id) ON DELETE CASCADE,
-    quote_num   text,
+    quote_id    serial PRIMARY KEY,
+    order_id    integer REFERENCES sales.order (order_id) ON DELETE CASCADE,
     period      integer NOT NULL DEFAULT 30,
     expiry_date date,
+    contact_id  integer REFERENCES person (party_id),
     notes       text,
+    status      document_status_t DEFAULT 'DRAFT',
     issued_at   timestamp,
     created     timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified    timestamp,
-    PRIMARY KEY (document_id)
+    created_by  integer REFERENCES person (party_id),
+    modified    timestamp
   )
 
   CREATE TABLE payment (
@@ -74,11 +78,11 @@ CREATE SCHEMA sales
     created     timestamp DEFAULT CURRENT_TIMESTAMP,
     modified    timestamp,
     PRIMARY KEY (document_id)
-  );
+  )
 
   CREATE TABLE line_item (
     line_item_id        serial PRIMARY KEY,
-    document_id         integer REFERENCES source_document (document_id) ON DELETE CASCADE,
+    order_id            integer REFERENCES source_document (document_id) ON DELETE CASCADE,
     product_id          integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
     -- The order in which the line items appear in a document
     position            smallint,
@@ -100,14 +104,14 @@ CREATE SCHEMA sales
     uom_id              integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
     quantity            numeric(10,3),
     tax                 boolean DEFAULT TRUE,
-    delivery_address_id integer REFERENCES address (address_id)
+    delivery_address_id integer REFERENCES address (address_id),
     note                text,
     note_importance     li_note_importance_t DEFAULT 'normal',
     created             timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
   CREATE TABLE order_line_item (
-    order_id integer REFERENCES order (order_id) ON DELETE RESTRICT,
+    order_id integer REFERENCES sales.order (order_id) ON DELETE RESTRICT,
     line_item_id integer REFERENCES line_item (line_item_id) ON DELETE CASCADE,
     PRIMARY KEY (line_item_id)
   )
@@ -127,26 +131,14 @@ CREATE SCHEMA sales
   CREATE VIEW quote_v AS
     SELECT
       q.*,
-      d.issued_to,
-      d.contact_id,
-      d.data,
-      d.status,
+      o.buyer_id,
+      q.contact_id,
+      q.data,
+      q.status,
       d.created_by
     FROM quote q
-    INNER JOIN source_document d
-      USING (document_id)
-
-    CREATE VIEW purchase_order_v AS
-    SELECT
-      po.*,
-      d.issued_to,
-      d.contact_id,
-      d.data,
-      d.status,
-      d.created_by
-    FROM purchase_order
-    INNER JOIN source_document d
-      USING (document_id);
+    INNER JOIN sales.order o
+      USING (order_id);
 
 --
 -- Rules

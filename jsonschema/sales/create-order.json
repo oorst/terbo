@@ -1,0 +1,15 @@
+{
+  "title": "sales.create_order(json)",
+  "description": "expected payload for sales.create_order(json)",
+  "properties": {
+    "userId": {
+      "type": "integer",
+      "description": "userId of the person calling sales.create_order()"
+    },
+    "buyerId": {
+      "type": "integer",
+      "description": "partyId of the buyer for the order"
+    }
+  },
+  "required": ["userId", "buyerId"]
+}

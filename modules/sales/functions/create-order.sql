@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION sales.create_quote (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION sales.create_order (json, OUT result json) AS
 $$
 BEGIN
   WITH payload AS (
@@ -19,22 +19,12 @@ BEGIN
       created_by
     FROM payload
     RETURNING *
-  ), quote AS (
-    INSERT INTO sales.quote (
-      order_id,
-      created_by
-    )
-    SELECT
-      order_id,
-      created_by
-    FROM sales_order
-    RETURNING *
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      order_id AS "quoteId"
-    FROM quote
+      order_id AS "orderId"
+    FROM sales_order
   ) r;
 END
 $$

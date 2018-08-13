@@ -5,13 +5,13 @@ BEGIN
     SELECT json_agg(sales.create_line_item(value)) INTO result
     FROM json_array_elements($1);
   ELSE
-    IF $1->>'documentId' IS NULL THEN
-      RAISE EXCEPTION 'must provide document id to create line item';
+    IF $1->>'orderId' IS NULL THEN
+      RAISE EXCEPTION 'orderId not provided';
     END IF;
 
     WITH payload AS (
       SELECT
-        j."documentId" AS document_id,
+        j."orderId" AS document_id,
         j."productId" AS product_id,
         name,
         code,
@@ -20,18 +20,17 @@ BEGIN
         quantity,
         gross
       FROM json_to_record($1) AS j (
-        "documentId" integer,
-        "productId" integer,
-        name         text,
-        code         text,
-        description  text,
-        data         jsonb,
-        quantity     numeric(10,3),
-        gross        numeric(10,2)
+        "orderId"   integer,
+        name        text,
+        code        text,
+        description text,
+        data        jsonb,
+        quantity    numeric(10,3),
+        gross       numeric(10,2)
       )
     ), line_item AS (
       INSERT INTO sales.line_item (
-        document_id,
+        order_id,
         product_id,
         code,
         name,
@@ -41,7 +40,7 @@ BEGIN
         gross
       )
       SELECT
-        p.document_id,
+        p.order_id,
         p.product_id,
         p.code,
         p.name,
@@ -56,7 +55,7 @@ BEGIN
     FROM (
       SELECT
         line_item_id AS "lineItemId",
-        document_id AS "documentId",
+        dorder_id AS "orderId",
         product_id AS "productId",
         code,
         name,

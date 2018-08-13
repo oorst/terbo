@@ -1,0 +1,14 @@
+{
+  "title": "prd.update_composition",
+  "description": "prd.update_composition JSON payload schema",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer"
+    },
+    "projectId": {
+      "type": "integer"
+    }
+  },
+  "required": ["userId", "projectId"]
+}
