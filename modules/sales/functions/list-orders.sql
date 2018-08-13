@@ -6,7 +6,7 @@ BEGIN
     SELECT
       o.order_id AS "orderId",
       o.status,
-      buyer.name
+      buyer.name AS "buyerName"
     FROM sales.order o
     INNER JOIN party_v buyer
       ON buyer.party_id = o.buyer_id
