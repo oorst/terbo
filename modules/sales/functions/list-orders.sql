@@ -19,6 +19,7 @@ BEGIN
         $1->>'search'
       )
     )
+    ORDER BY o.order_id DESC
   ) r;
 END
 $$
