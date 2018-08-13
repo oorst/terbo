@@ -1,5 +1,8 @@
 {
+  "name": "terbo",
   "files": [
     "jsonschema/"
-  ]
+  ],
+  "repository": "https://github.com/oorst/terbo.git",
+  "version": "0.0.1"
 }
