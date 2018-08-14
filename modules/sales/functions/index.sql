@@ -11,6 +11,6 @@
 \ir issue-quote.sql
 \ir create-line-item.sql
 \ir update-invoice.sql
-\ir update-order.sql
+\ir update-order-line-item.sql
 \ir update-purchase-order.sql
 \ir update-quote.sql

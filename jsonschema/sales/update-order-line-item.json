@@ -1,0 +1,14 @@
+{
+  "title": "sales.update_order_line_item(json)",
+  "description": "expected payload for sales.update_order_line_item(json)",
+  "properties": {
+    "lineItemId": {
+      "type": "integer"
+    },
+    "quantity": {
+      "type": "number"
+    }
+  },
+  "required": ["lineItemId"],
+  "additionalProperties": false
+}
