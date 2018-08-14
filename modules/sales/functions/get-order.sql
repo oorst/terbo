@@ -43,6 +43,7 @@ BEGIN
       ON pp.product_id = li.product_id
     LEFT JOIN prd.uom uom
       ON uom.uom_id = pp.uom_id
+    WHERE li.removed_at IS NULL
     ORDER BY position, line_item_id
   )
   SELECT json_strip_nulls(to_json(r)) INTO result

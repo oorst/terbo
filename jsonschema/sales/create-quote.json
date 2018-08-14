@@ -1,0 +1,15 @@
+{
+  "title": "sales.create_quote(json)",
+  "description": "expected payload for sales.create_quote(json)",
+  "properties": {
+    "userId": {
+      "type": "integer",
+      "description": "id of the person calling sales.create_quote()"
+    },
+    "orderId": {
+      "type": "integer",
+      "description": "id of the order on which the quote is based"
+    }
+  },
+  "required": ["userId", "buyerId"]
+}
