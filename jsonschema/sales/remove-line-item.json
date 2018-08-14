@@ -1,0 +1,11 @@
+{
+  "title": "sales.remove_line_item(json)",
+  "description": "expected payload for sales.remove_line_item(json)",
+  "properties": {
+    "lineItemId": {
+      "type": "integer"
+    }
+  },
+  "required": ["lineItemId"],
+  "additionalProperties": false
+}
