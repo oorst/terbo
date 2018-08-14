@@ -21,6 +21,7 @@ CREATE SCHEMA sales
     buyer_id            integer REFERENCES party (party_id) ON DELETE SET NULL,
     delivery_address_id integer REFERENCES address (address_id) ON DELETE SET NULL,
     status              order_status_t DEFAULT 'PENDING',
+    notes               text,
     created             timestamp DEFAULT CURRENT_TIMESTAMP,
     created_by          integer REFERENCES person (party_id) NOT NULL
   )

@@ -1,0 +1,14 @@
+{
+  "title": "sales.update_order(json)",
+  "description": "expected payload for sales.update_order(json)",
+  "properties": {
+    "orderId": {
+      "type": "integer"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": ["orderId"],
+  "additionalProperties": false
+}
