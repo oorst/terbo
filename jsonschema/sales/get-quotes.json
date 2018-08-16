@@ -1,0 +1,10 @@
+{
+  "title": "sales.get_quotes(json)",
+  "description": "expected json payload for sales.get_quotes(json)",
+  "properties": {
+    "orderId": {
+      "type": "integer"
+    }
+  },
+  "required": ["orderId"]
+}
