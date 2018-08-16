@@ -22,11 +22,13 @@ BEGIN
   ), document AS (
     SELECT
       o.order_id AS "orderId",
-      buyer.name AS "buyerName",
-      buyer.email
+      o.buyer_id AS "buyerId",
+      buyer.name AS "buyerName"
     FROM sales_order o
     INNER JOIN party_v buyer
-      USING (buyer_id)
+      ON buyer.party_id = o.buyer_id
+    INNER JOIN party_v creator
+      ON creator.party_id = o.created_by
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (

@@ -3,8 +3,8 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      j."orderId" AS buyer_id,
-      j."createdBy" AS created_by
+      j."orderId" AS order_id,
+      j."userId" AS created_by
     FROM json_to_record($1) AS j (
       "orderId"   integer,
       "userId" integer
@@ -17,7 +17,7 @@ BEGIN
     SELECT
       order_id,
       created_by
-    FROM quote
+    FROM payload
     RETURNING *
   )
   SELECT json_strip_nulls(to_json(r)) INTO result

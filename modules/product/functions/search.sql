@@ -15,7 +15,7 @@ BEGIN
   SELECT json_strip_nulls(json_agg(r)) INTO result
   FROM (
     SELECT
-      p.product_id AS id,
+      p.product_id AS "productId",
       p.name,
       p.code,
       p.sku,

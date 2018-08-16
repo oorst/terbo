@@ -1,0 +1,55 @@
+{
+  "title": "prd.update_product(json)",
+  "description": "expected JSON payload for prd.update_product(json)",
+  "type": "object",
+  "properties": {
+    "productId": {
+      "type": "integer",
+      "description": "product_id of the product"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "sku": {
+      "type": "string"
+    },
+    "familyId": {
+      "type": "integer"
+    },
+    "manufacturerId": {
+      "type": "integer"
+    },
+    "supplierId": {
+      "type": "integer"
+    },
+    "manufacturerCode": {
+      "type": "string"
+    },
+    "supplierCode": {
+      "type": "string"
+    },
+    "tags" : {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "weight": {
+      "type": "number"
+    },
+    "uomId": {
+      "type": "integer"
+    }
+  },
+  "required": ["productId"],
+  "additionalProperties": false
+}
