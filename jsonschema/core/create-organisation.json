@@ -6,8 +6,7 @@
     "userId": {
       "description": "userId of the caller",
       "type": "integer"
-    },
-
+    }
   },
   "oneOf": [
     {
@@ -23,5 +22,6 @@
       }
     }
   ],
-  "required": ["userId"]
+  "required": ["userId"],
+  "additionalProperties": false
 }

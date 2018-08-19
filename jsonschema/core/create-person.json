@@ -13,7 +13,11 @@
     "email": {
       "type": "string",
       "format": "email"
+    },
+    "type": {
+      "type": "string"
     }
   },
-  "required": ["userId", "name", "email"]
+  "required": ["userId", "name", "email"],
+  "additionalProperties": false
 }
