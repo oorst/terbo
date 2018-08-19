@@ -1,0 +1,27 @@
+{
+  "title": "create_organisation(json)",
+  "description": "expected JSON payload for create_organisation(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "description": "userId of the caller",
+      "type": "integer"
+    },
+
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "properties": {
+        "tradingName": "string"
+      }
+    }
+  ],
+  "required": ["userId"]
+}

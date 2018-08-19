@@ -4,14 +4,13 @@ CREATE SCHEMA prj
     prerequisite_id integer REFERENCES job (job_id) ON DELETE CASCADE,
     parent_id       integer REFERENCES job (job_id) ON DELETE CASCADE,
     dependency_id   integer REFERENCES job (job_id) ON DELETE CASCADE,
-    name            text,
-    short_desc      text,
-    product_id      integer REFERENCES prd.product (product_id),
-    lag             interval,
-    lead            interval,
+    name           text,
+    shortDesc      text,
+    lag            interval,
+    lead           interval,
     created_by      integer REFERENCES person (party_id) ON DELETE SET NULL,
-    created         timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified        timestamp DEFAULT CURRENT_TIMESTAMP
+    created        timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified       timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
   CREATE TABLE project (
@@ -19,20 +18,20 @@ CREATE SCHEMA prj
     job_id     integer REFERENCES job (job_id) ON DELETE CASCADE,
     address_id integer REFERENCES full_address (address_id) ON DELETE SET NULL,
     owner_id   integer REFERENCES party (party_id) ON DELETE SET NULL,
-    name       text,
-    nickname   text,
+    name      text,
+    nickname  text,
     created_by integer REFERENCES person (party_id) ON DELETE SET NULL,
-    created    timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified   timestamp DEFAULT CURRENT_TIMESTAMP
+    created   timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified  timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
-  CREATE TABLE project_job (
+  CREATE TABLE projectJob (
     project_id integer REFERENCES project (project_id),
     job_id     integer REFERENCES job (job_id),
     PRIMARY KEY (project_id)
   )
 
-  CREATE TABLE project_role (
+  CREATE TABLE projectRole (
     project_id integer REFERENCES project (project_id),
     party_id   integer REFERENCES person (party_id)
   )
@@ -56,13 +55,5 @@ CREATE SCHEMA prj
     lag            interval,
     lead           interval,
     data           jsonb,
-    created        timestamp DEFAULT CURRENT_TIMESTAMP
-  )
-
-  CREATE TABLE work_package (
-    work_pckg_id   serial PRIMARY KEY,
-    name           text,
-    deliverable_id integer REFERENCES deliverable (deliverable_id) ON DELETE CASCADE,
-    status         integer,
     created        timestamp DEFAULT CURRENT_TIMESTAMP
   );

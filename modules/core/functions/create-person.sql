@@ -88,11 +88,12 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      party_id AS id,
+      party_id AS "partyId",
       name,
       email,
       mobile,
-      phone
+      phone,
+      created
     FROM new_person
   ) r;
 END

@@ -4,7 +4,7 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      pr.product_id AS id,
+      pr.product_id AS "productId",
       pr.type,
       pr.code,
       pr.sku,
@@ -174,7 +174,7 @@ $$
 BEGIN
   SELECT prd.get_product(product_id) INTO result
   FROM prd.product
-  WHERE product_id = ($1->>'id')::integer OR code = ($1->>'code') OR sku = ($1->>'code');
+  WHERE product_id = ($1->>'productId')::integer OR code = ($1->>'code') OR sku = ($1->>'code');
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

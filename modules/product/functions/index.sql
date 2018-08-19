@@ -4,7 +4,7 @@
 \ir delete-product.sql
 \ir update-product.sql
 \ir update-pricing.sql
-\ir update-composition.sql
+-- \ir update-composition.sql
 \ir get-markups.sql
 \ir get-uoms.sql
 \ir search.sql

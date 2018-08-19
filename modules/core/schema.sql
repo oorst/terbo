@@ -18,8 +18,8 @@ CREATE TABLE address (
 CREATE TABLE full_address (
   address_id    serial PRIMARY KEY,
   lot_number    text,
-  road_number_1 text,
-  road_number_2 text,
+  road_number1 text,
+  road_number2 text,
   road_name     text,
   road_type     text,
   road_suffix   text,
@@ -37,26 +37,29 @@ CREATE TABLE party (
 );
 
 CREATE TABLE person (
-  party_id           integer REFERENCES party (party_id) PRIMARY KEY,
-  name               text,
-  email              text UNIQUE,
-  mobile             text,
-  phone              text,
-  address_id         integer REFERENCES address (address_id) ON DELETE SET NULL, -- Residential address
+  party_id          integer REFERENCES party (party_id) PRIMARY KEY,
+  name             text,
+  email            text UNIQUE,
+  mobile           text,
+  phone            text,
+  address_id        integer REFERENCES address (address_id) ON DELETE SET NULL, -- Residential address
   billing_address_id integer REFERENCES address (address_id) ON DELETE SET NULL, -- Postal address
-  created            timestamp DEFAULT CURRENT_TIMESTAMP
+  created          timestamp DEFAULT CURRENT_TIMESTAMP,
+  modified         timestamp
 );
 
 CREATE TABLE organisation (
-  party_id           integer REFERENCES party (party_id) PRIMARY KEY,
-  name               text,
-  trading_name       text,
-  address_id         integer REFERENCES address (address_id) ON DELETE SET NULL,
+  party_id          integer REFERENCES party (party_id) PRIMARY KEY,
+  name             text,
+  trading_name      text,
+  address_id        integer REFERENCES address (address_id) ON DELETE SET NULL,
   billing_address_id integer REFERENCES address (address_id) ON DELETE SET NULL,
-  url                text,
-  industry_code      text,
-  data               jsonb,
-  created            timestamp DEFAULT CURRENT_TIMESTAMP
+  url              text,
+  industry_code     text,
+  data             jsonb,
+  created          timestamp DEFAULT CURRENT_TIMESTAMP,
+  modified         timestamp,
+  CONSTRAINT valid_name CHECK(name IS NOT NULL OR trading_name IS NOT NULL)
 );
 
 CREATE TABLE role (
@@ -89,6 +92,11 @@ CREATE TABLE core_settings (
   value text
 );
 
+CREATE TABLE tag (
+  tag_id serial PRIMARY KEY,
+  name  text UNIQUE
+);
+
 CREATE OR REPLACE VIEW party_v AS
   SELECT
     party_id,
@@ -116,7 +124,7 @@ CREATE OR REPLACE VIEW party_v AS
 @triggerFunction
   @def party_tg()
   @description
-    insert a new party and assign to party_id of person or organisation
+    insert a new party and assign to partyId of person or organisation
   @private
 */
 CREATE OR REPLACE FUNCTION party_tg () RETURNS TRIGGER AS
@@ -134,7 +142,8 @@ BEGIN
     )
     RETURNING party_id
   )
-  SELECT party_id INTO NEW.party_id
+  SELECT
+    party_id INTO NEW.party_id
   FROM new_party;
 
   RETURN NEW;
