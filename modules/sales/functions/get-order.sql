@@ -8,6 +8,7 @@ BEGIN
       o.notes,
       o.created_by,
       o.buyer_id,
+      o.purchase_order_num,
       o.created,
       buyer.name AS buyer_name,
       buyer.type AS buyer_type,
@@ -43,7 +44,7 @@ BEGIN
       ON pp.product_id = li.product_id
     LEFT JOIN prd.uom uom
       ON uom.uom_id = pp.uom_id
-    WHERE li.removed_at IS NULL
+    WHERE li.end_at IS NULL
     ORDER BY position, line_item_id
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
@@ -53,6 +54,7 @@ BEGIN
       document.buyer_name AS "buyerName",
       document.buyer_type AS "buyerType",
       document.status,
+      document.purchase_order_num AS "purchaseOrderNumber",
       document.created,
       document.notes,
       document.creator_name AS "creatorName",

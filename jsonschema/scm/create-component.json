@@ -1,0 +1,42 @@
+{
+  "title": "scm.create_component(json)",
+  "description": "expected JSON payload for scm.create_component(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer",
+      "description": "id of the caller"
+    },
+    "itemUuid": {
+      "description": "the item to which the component is being added",
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["PRODUCT", "PART", "ITEM"]
+    },
+    "name": {
+      "type": "string"
+    },
+    "productId": {
+      "type": "integer"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "type": "string",
+          "pattern": "PRODUCT"
+        }
+      },
+      "required": ["productId"]
+    },
+    {
+      "required": ["familyId"]
+    }
+  ],
+  "required": ["userId", "itemUuid", "type"],
+  "additionalProperties": false
+}

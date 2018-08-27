@@ -20,22 +20,13 @@ BEGIN
       ON c.parent_id = p.product_id
   )
   SELECT
-    sum(coalesce(price.gross, cost.amount * (1 + price.markup / 100.00)) * product.quantity)::numeric(10,2) INTO result
+    sum(coalesce(price.gross, price.cost * (1 + price.markup / 100.00)) * product.quantity)::numeric(10,2) INTO result
   FROM product
-  LEFT JOIN (
-    SELECT DISTINCT ON (cost.product_id)
-      cost.product_id,
-      cost.cost_id,
-      cost.amount
-    FROM prd.cost cost
-    WHERE cost.end_at > CURRENT_TIMESTAMP OR cost.end_at IS NULL
-    ORDER BY cost.product_id, cost.cost_id DESC
-  ) cost
-    USING (product_id)
   LEFT JOIN (
     SELECT DISTINCT ON (price.product_id)
       price.product_id,
       price.price_id,
+      price.cost,
       price.gross,
       price.net,
       COALESCE(price.markup, markup.amount, 0.00) AS markup

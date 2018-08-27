@@ -4,9 +4,10 @@ BEGIN
   WITH document AS (
     SELECT
       o.order_id,
-      o.status,
       o.created_by AS order_created_by,
+      o.purchase_order_num,
       o.buyer_id,
+      i.status,
       i.contact_id,
       i.invoice_id,
       i.issued_at,
@@ -34,13 +35,15 @@ BEGIN
       uom.abbr AS "uomAbbr",
       li.data,
       li.quantity,
-      li.gross,
-      coalesce(li.gross, prd.product_gross(p.product_id)) AS "$gross"
+      coalesce(li.gross, price.gross) AS gross,
+      (coalesce(li.gross, price.gross) * coalesce(li.quantity, 1.000))::numeric(10,2) AS "lineTotal"
     FROM sales.line_item li
     INNER JOIN document
       USING (order_id)
     LEFT JOIN prd.product_list_v p
       USING (product_id)
+    LEFT JOIN prd.price_v price
+      ON price.product_id = li.product_id
     LEFT JOIN prd.product pp
       ON pp.product_id = li.product_id
     LEFT JOIN prd.uom uom
@@ -55,6 +58,7 @@ BEGIN
       document.invoice_id AS "invoiceId",
       buyer.name AS "buyerName",
       buyer.type AS "buyerType",
+      document.purchase_order_num AS "purchaseOrderNumber",
       document.status,
       document.created::date AS "createdDate",
       document.issued_at::date AS "issueDate",

@@ -13,6 +13,7 @@ BEGIN
         SELECT
           CASE p.key
             WHEN 'contactId' THEN 'contact_id'
+            WHEN 'purchaseOrderNumber' THEN 'purchase_order_num'
             ELSE p.key
           END AS column,
           CASE
@@ -24,10 +25,7 @@ BEGIN
             ELSE quote_literal(p.value)
           END AS value
         FROM json_each_text($1) p
-        WHERE p.key != 'orderId' AND p.key IN (
-          'notes',
-          'data'
-        )
+        WHERE p.key != 'orderId'
       ) q
     ) c
   );

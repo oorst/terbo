@@ -3,74 +3,37 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      quote."createdBy" AS created_by,
-      quote."issuedTo" AS issued_to,
-      quote."contactId" AS contact_id
-    FROM json_to_record($1) AS quote (
-      "createdBy" integer,
-      "issuedTo"  integer,
-      "contactId" integer
+      j."userId" AS created_by,
+      j."orderId" AS order_id
+    FROM json_to_record($1) AS j (
+      "userId"  integer,
+      "orderId" integer
     )
-  ),
-  line_item AS (
-    SELECT
-      li.code,
-      li.name,
-      li.description,
-      li.data,
-      li."discountPc" AS discount_pc,
-      li."discountAmount" AS discount_amt,
-      li.gross,
-      li.net,
-      li."uomId" AS uom_id,
-      li.quantity,
-      li.tax,
-      li.note
-    FROM json_to_recordset($1->'lineItems') AS li (
-      code             text,
-      name             text,
-      description      text,
-      data             jsonb,
-      "discountPc"     numeric(3,2),
-      "discountAmount" numeric(10,2),
-      gross            numeric(10,2),
-      net              numeric(10,2),
-      "uomId"          integer,
-      quantity         numeric(10,3),
-      tax              boolean,
-      note             text,
-      created          timestamp
-    )
-  ),
-  document AS (
-    INSERT INTO sales.source_document (
-      issued_to,
-      contact_id,
-      created_by
-    )
-    SELECT
-      issued_to,
-      contact_id,
-      created_by
-    FROM payload
-    RETURNING *
   ), invoice AS (
     INSERT INTO sales.invoice (
-      document_id,
-      due_date
+      order_id,
+      created_by
     )
     SELECT
-      d.document_id,
-      (current_date + 30)::date AS expiry_date
-    FROM document d
+      p.order_id,
+      p.created_by
+    FROM payload p
+    INNER JOIN sales.order o
+      USING (order_id)
     RETURNING *
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      document_id AS "invoiceId",
-      status
-    FROM document
+      i.invoice_id AS "invoiceId",
+      i.order_id AS "orderId",
+      i.status,
+      i.created,
+      p.party_id AS "creatorId",
+      p.name AS "creatorName"
+    FROM invoice i
+    INNER JOIN person p
+      ON p.party_id = i.created_by
   ) r;
 END
 $$

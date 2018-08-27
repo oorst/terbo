@@ -6,22 +6,24 @@
     "userId": {
       "description": "userId of the caller",
       "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "tradingName": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "pattern": "ORGANISATION"
     }
   },
   "oneOf": [
     {
-      "properties": {
-        "name": {
-          "type": "string"
-        }
-      }
+      "required": ["name"]
     },
     {
-      "properties": {
-        "tradingName": {
-          "type": "string"
-        }
-      }
+      "required": ["tradingName"]
     }
   ],
   "required": ["userId"],

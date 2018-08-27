@@ -4,5 +4,9 @@
     "jsonschema/"
   ],
   "repository": "https://github.com/oorst/terbo.git",
-  "version": "0.0.12"
+  "version": "0.0.12",
+  "dependencies": {
+    "lodash.camelcase": "^4.3.0",
+    "require-directory": "^2.1.1"
+  }
 }

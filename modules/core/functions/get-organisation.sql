@@ -4,8 +4,7 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      'organisation' AS type,
-      party_id AS id,
+      party_id AS "partyId",
       name,
       trading_name AS "tradingName",
       url,
@@ -14,8 +13,11 @@ BEGIN
       a.addr2,
       a.town,
       a.state,
-      a.code
+      a.code,
+      party.type
     FROM organisation
+    INNER JOIN party
+      USING (party_id)
     LEFT JOIN address a
       USING (address_id)
     WHERE party_id = id

@@ -1,3 +1,5 @@
+CREATE TYPE product_t AS ENUM ('PRODUCT', 'SERVICE');
+
 CREATE SCHEMA prd
   CREATE TABLE uom (
     uom_id     serial PRIMARY KEY,
@@ -9,25 +11,24 @@ CREATE SCHEMA prd
   CREATE TABLE product (
     product_id        serial PRIMARY KEY,
     family_id         integer REFERENCES product (product_id),
-    type             text DEFAULT 'product',
-    name             text,
-    description      text,
-    url              text,
-    code             text,
-    sku              text UNIQUE,
+    type              product_t DEFAULT 'PRODUCT',
+    name              text,
+    description       text,
+    url               text,
+    code              text,
+    sku               text UNIQUE,
     manufacturer_id   integer REFERENCES party (party_id) ON DELETE SET NULL,
     manufacturer_code text,
     supplier_id       integer REFERENCES party (party_id) ON DELETE SET NULL,
     supplier_code     text,
-    attributes       jsonb,
-    data             jsonb,
+    attributes        jsonb,
+    data              jsonb,
     uom_id            integer REFERENCES uom (uom_id) ON DELETE SET NULL,
     -- Weight in kilograms for every base unit of measure
-    weight           numeric(10,3),
-    created          timestamp DEFAULT CURRENT_TIMESTAMP,
+    weight            numeric(10,3),
+    created           timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at            timestamp,
-    modified         timestamp DEFAULT CURRENT_TIMESTAMP,
-    CHECK (type IN ('product', 'service')),
+    modified          timestamp DEFAULT CURRENT_TIMESTAMP,
     -- A product must have it's own name or get one from it's family
     CONSTRAINT valid_name CHECK(family_id IS NOT NULL OR name IS NOT NULL)
   )
@@ -44,6 +45,15 @@ CREATE SCHEMA prd
     quantity    numeric(10,3) DEFAULT 1,
     created     timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at       timestamp
+  )
+
+  CREATE TABLE product_uom (
+    product_uom_id serial PRIMARY KEY,
+    product_id     integer REFERENCES product (product_id) ON DELETE CASCADE,
+    uom_id         integer REFERENCES uom (uom_id) ON DELETE CASCADE,
+    divide         numeric(10,3),
+    multiply       numeric(10,3),
+    created        timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
   CREATE TABLE product_tag (
@@ -84,27 +94,37 @@ CREATE SCHEMA prd
   --   end_at     timestamp
   -- )
 
+  CREATE TABLE margin (
+    margin_id serial PRIMARY KEY,
+    name      text,
+    amount    numeric(5,2),
+    created   timestamp DEFAULT CURRENT_TIMESTAMP,
+    end_at    timestamp,
+    CONSTRAINT margin_value CHECK(margin > 0 AND margin < 1)
+  )
+
   CREATE TABLE markup (
     markup_id serial PRIMARY KEY,
     name      text,
-    -- Percentage markup
     amount    numeric(10,2),
     created   timestamp DEFAULT CURRENT_TIMESTAMP,
-    endAt    timestamp
+    end_at    timestamp
   )
 
   CREATE TABLE price (
     price_id   serial PRIMARY KEY,
     product_id integer REFERENCES product (product_id) ON DELETE CASCADE,
-    cost      numeric(10,2),
-    gross     numeric(10,2),
-    net       numeric(10,2),
-    -- Percentage markup on the Product Cost
-    markup    numeric(10,2),
+    cost       numeric(10,2),
+    gross      numeric(10,2),
+    net        numeric(10,2),
+    margin     numeric(4,3),
+    margin_id  integer REFERENCES margin (margin_id) ON DELETE SET NULL,
+    markup     numeric(10,2),
     markup_id  integer REFERENCES markup (markup_id) ON DELETE SET NULL,
-    tax       boolean,
-    created   timestamp DEFAULT CURRENT_TIMESTAMP,
-    endAt     timestamp
+    tax        boolean,
+    created    timestamp DEFAULT CURRENT_TIMESTAMP,
+    end_at      timestamp,
+    CONSTRAINT margin_value CHECK(margin > 0 AND margin < 1)
   )
 
   -- Do not use this view for composite products.  Only get_product() will
@@ -146,97 +166,100 @@ CREATE SCHEMA prd
   --   LEFT JOIN prd.product fam
   --     ON fam.product_id = p.family_id
 
-  CREATE OR REPLACE VIEW product_list_v AS
+  CREATE OR REPLACE VIEW prd.product_list_v AS
     SELECT
       p.product_id,
       p.type,
       p.sku,
-      COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS _code,
-      COALESCE(p.name, fam.name) AS _name,
-      COALESCE(p.description, fam.description) AS _description,
+      COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS "$code",
+      COALESCE(p.name, fam.name) AS "$name",
+      COALESCE(p.description, fam.description) AS "$description",
       p.created,
       p.modified
     FROM prd.product p
     LEFT JOIN prd.product fam
-      ON fam.product_id = p.family_id;
+      ON fam.product_id = p.family_id    
 
-  -- CREATE OR REPLACE VIEW product_v AS
-  --   SELECT
-  --     p.product_id,
-  --     p.family_id,
-  --     p.manufacturer_id,
-  --     p.manufacturer_code,
-  --     p.supplier_id,
-  --     p.supplier_code,
-  --     p.code,
-  --     p.sku,
-  --     COALESCE(p.name, fam.name) AS name,
-  --     p.description,
-  --     p.data,
-  --     p.type,
-  --     p.uom_id,
-  --     p.weight,
-  --     p.created,
-  --     p.end_at,
-  --     p.modified,
-  --     (
-  --       SELECT json_strip_nulls(to_json(f))
-  --       FROM (
-  --         SELECT
-  --           fam.manufacturer_id,
-  --           fam.manufacturer_code,
-  --           fam.supplier_id,
-  --           fam.supplier_code,
-  --           fam.code,
-  --           fam.sku
-  --       ) f
-  --       WHERE NOT (f IS NULL)
-  --     ) AS family,
-  --     (
-  --       SELECT
-  --         array_agg(tag.name)
-  --       FROM prd.product_tag pt
-  --       INNER JOIN prd.tag tag
-  --         USING (tag_id)
-  --       WHERE pt.product_id = p.product_id
-  --     ) AS tags,
-  --     cost.cost_id,
-  --     cost.amount AS cost,
-  --     cost.created AS cost_created,
-  --     price.price_id,
-  --     price.gross,
-  --     price.net,
-  --     price.markup,
-  --     price.created AS price_created,
-  --     markup.name AS markup_name,
-  --     markup.amount AS markup_amount,
-  --     markup.created AS markup_created,
-  --     uom.name AS uom_name,
-  --     uom.abbr AS uom_abbr,
-  --     uom.type AS uom_type
-  --   FROM prd.product p
-  --   LEFT JOIN prd.uom uom
-  --     USING (uom_id)
-  --   LEFT JOIN prd.product fam
-  --     ON fam.product_id = p.family_id
-  --   LEFT JOIN LATERAL (
-  --     SELECT DISTINCT ON (cost.product_id)
-  --       *
-  --     FROM prd.cost cost
-  --     WHERE cost.product_id = p.product_id
-  --     ORDER BY cost.product_id, cost.cost_id DESC
-  --   ) cost
-  --     ON cost.product_id = p.product_id
-  --   LEFT JOIN LATERAL (
-  --     SELECT DISTINCT ON (price.product_id)
-  --       *
-  --     FROM prd.price price
-  --     WHERE price.product_id = p.product_id
-  --     ORDER BY price.product_id, price.price_id DESC
-  --   ) price
-  --     ON price.product_id = p.product_id
-  --   LEFT JOIN prd.markup markup
-  --     ON markup.markup_id = price.markup_id; -- end CREATE SCHEMA prd
+  -- Get the current price record for a product
+  CREATE OR REPLACE VIEW price_v AS
+    WITH RECURSIVE product AS (
+      -- Select products and recurse where a product has child components
+      SELECT DISTINCT ON (p.product_id)
+        p.product_id AS root_id,
+        p.product_id,
+        1.000 AS quantity,
+        NULL::integer AS parent_id,
+        c.parent_id = p.product_id AS is_composite
+      FROM prd.product p
+      LEFT JOIN prd.component c
+        ON c.parent_id = p.product_id
+
+      UNION ALL
+
+      SELECT
+        p.root_id,
+        c.product_id,
+        (p.quantity * c.quantity)::numeric(10,3) AS quantity, -- Adjust quantities
+        c.parent_id,
+        cc.parent_id = c.product_id AS is_composite
+      FROM product p
+      INNER JOIN prd.component c
+        ON c.parent_id = p.product_id
+      LEFT JOIN prd.component cc
+        ON cc.parent_id = c.product_id
+      WHERE p.is_composite IS TRUE
+    ),
+    -- Get the current price and compute the markup
+    current_price AS (
+      SELECT DISTINCT ON (price.product_id)
+        price.product_id,
+        coalesce(
+          price.margin,
+          mg.amount,
+          coalesce(price.markup, mk.amount) / (1 + coalesce(price.markup, mk.amount))
+        ) AS margin,
+        coalesce(
+          coalesce(price.margin, mg.amount) / (1 - coalesce(price.margin, mg.amount)), -- Calculated markup has priority over set markup
+          price.markup,
+          mk.amount,
+          0.00 -- Markup should not be NULL
+        ) AS markup,
+        price.cost,
+        price.gross
+      FROM prd.price price
+      LEFT JOIN prd.margin mg
+        USING (margin_id)
+      LEFT JOIN prd.markup mk
+        USING (markup_id)
+      ORDER BY price.product_id, price.price_id DESC
+    ),
+    -- Compute the gross price
+    computed_price AS (
+      SELECT
+        root_id,
+        coalesce(
+          price.gross,
+          price.cost + (price.cost * price.markup)
+        ) * product.quantity AS gross,
+        price.cost * product.quantity AS cost
+      FROM product
+      INNER JOIN current_price price
+        USING (product_id)
+    ), sum AS (
+      SELECT
+        root_id AS product_id,
+        sum(price.gross)::numeric(10,2) AS gross,
+        sum(price.cost)::numeric(10,2) AS cost
+      FROM computed_price price
+      GROUP BY root_id
+    )
+    SELECT
+      product_id,
+      gross,
+      cost,
+      gross - cost AS profit,
+      ((gross - cost) / gross)::numeric(4,3) AS margin
+    FROM sum;
 
 --
 -- Triggers
@@ -289,7 +312,7 @@ CREATE TRIGGER product_update_tg BEFORE UPDATE ON prd.component
   FOR EACH ROW EXECUTE PROCEDURE prd.component_update_tg();
 
 -- Update products when cost or pricing has changed
-CREATE OR REPLACE FUNCTION prd.price_cost_insert_tg () RETURNS TRIGGER AS
+CREATE OR REPLACE FUNCTION prd.price_insert_tg () RETURNS TRIGGER AS
 $$
 BEGIN
   -- Update parent products
@@ -306,4 +329,4 @@ $$
 LANGUAGE 'plpgsql';
 
 CREATE TRIGGER price_insert_tg AFTER INSERT ON prd.price
-  FOR EACH ROW EXECUTE PROCEDURE prd.price_cost_insert_tg();
+  FOR EACH ROW EXECUTE PROCEDURE prd.price_insert_tg();

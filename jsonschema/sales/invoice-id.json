@@ -1,0 +1,11 @@
+{
+  "title": "invoiceId",
+  "description": "expected JSON payload for functions that require an invoiceId",
+  "type": "object",
+  "properties": {
+    "invoiceId": {
+      "type": "integer"
+    }
+  },
+  "required": ["invoiceId"]
+}

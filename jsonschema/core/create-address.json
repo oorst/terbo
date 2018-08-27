@@ -1,0 +1,27 @@
+{
+  "title": "create_address(json)",
+  "description": "expected JSON payload for create_address(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "description": "userId of the caller",
+      "type": "integer"
+    },
+    "addr1": {
+      "type": "string"
+    },
+    "addr2": {
+      "type": "string",
+      "format": "email"
+    },
+    "town": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string",
+      "enum": ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]
+    }
+  },
+  "required": ["userId", "addr1", "town", "state"],
+  "additionalProperties": false
+}

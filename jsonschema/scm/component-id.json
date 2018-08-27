@@ -1,0 +1,11 @@
+{
+  "title": "componentId",
+  "description": "expected JSON payload for functions that require a componentId",
+  "type": "object",
+  "properties": {
+    "componentId": {
+      "type": "integer"
+    }
+  },
+  "required": ["componentId"]
+}

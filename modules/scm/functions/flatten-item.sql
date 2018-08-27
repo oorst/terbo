@@ -42,7 +42,7 @@ BEGIN
     UNION ALL
 
     SELECT
-      child.item_uuid,
+      c.item_uuid,
       i.product_id,
       i.type,
       i.name,
@@ -55,13 +55,13 @@ BEGIN
       i.created,
       i.end_at,
       i.modified,
-      (item.quantity * coalesce(child.quantity, 1.000))::numeric(10,3) AS quantity,
+      (item.quantity * coalesce(c.quantity, 1.000))::numeric(10,3) AS quantity,
       item.item_uuid AS parent_uuid
-    FROM scm.sub_assembly child
+    FROM scm.component c
     INNER JOIN item
-      ON item.item_uuid = child.parent_uuid
+      ON item.item_uuid = c.parent_uuid
     LEFT JOIN scm.item i
-      ON i.item_uuid = child.item_uuid
+      ON i.item_uuid = c.item_uuid
   )
   SELECT
     *

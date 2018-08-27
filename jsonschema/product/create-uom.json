@@ -1,0 +1,18 @@
+{
+  "title": "prd.create_uom(json)",
+  "description": "expected JSON payload for prd.create_uom(json)",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "abbr": {
+      "type": "string"
+    },
+    "type": {
+      "type": "integer"
+    }
+  },
+  "required": ["name", "abbr"],
+  "additionalProperties": false
+}

@@ -7,6 +7,9 @@
     },
     "quantity": {
       "type": "number"
+    },
+    "gross": {
+      "type": "number"
     }
   },
   "required": ["lineItemId"],

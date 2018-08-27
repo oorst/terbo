@@ -37,15 +37,15 @@ CREATE TABLE party (
 );
 
 CREATE TABLE person (
-  party_id          integer REFERENCES party (party_id) PRIMARY KEY,
-  name             text,
-  email            text UNIQUE,
-  mobile           text,
-  phone            text,
-  address_id        integer REFERENCES address (address_id) ON DELETE SET NULL, -- Residential address
+  party_id           integer REFERENCES party (party_id) PRIMARY KEY,
+  name               text,
+  email              text UNIQUE,
+  mobile             text,
+  phone              text,
+  address_id         integer REFERENCES address (address_id) ON DELETE SET NULL, -- Residential address
   billing_address_id integer REFERENCES address (address_id) ON DELETE SET NULL, -- Postal address
-  created          timestamp DEFAULT CURRENT_TIMESTAMP,
-  modified         timestamp
+  created            timestamp DEFAULT CURRENT_TIMESTAMP,
+  modified           timestamp
 );
 
 CREATE TABLE organisation (

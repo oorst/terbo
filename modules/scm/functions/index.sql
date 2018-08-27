@@ -2,6 +2,7 @@
 \ir create-item.sql
 \ir create-task.sql
 \ir create-route.sql
+\ir delete-component.sql
 \ir delete-item.sql
 \ir delete-route.sql
 \ir get-item.sql
@@ -19,6 +20,6 @@
 -- \ir search-items.sql
 \ir search-routes.sql
 \ir search-tasks.sql
-\ir update-subassembly.sql
+\ir update-component.sql
 \ir delete-subassembly.sql
 \ir get-line-item.sql

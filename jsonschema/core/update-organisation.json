@@ -1,0 +1,16 @@
+{
+  "title": "update organisation(json)",
+  "description": "expected JSON payload for update_organisation(json)",
+  "properties": {
+    "partyId": {
+      "type": "integer"
+    },
+    "tradingName": {
+      "type": "string"
+    },
+    "abn": {
+      "type": "integer"
+    }
+  },
+  "required": ["partyId"]
+}

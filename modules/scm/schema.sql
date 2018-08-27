@@ -52,12 +52,12 @@ CREATE SCHEMA scm
     modified       timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
-  CREATE TABLE subassembly (
-    subassembly_id serial PRIMARY KEY,
+  CREATE TABLE component (
+    component_id   serial PRIMARY KEY,
     root_uuid      uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
     parent_uuid    uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
     item_uuid      uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
-    quantity      numeric(10,3)
+    quantity       numeric(10,3)
   )
 
   CREATE TABLE item_instance (

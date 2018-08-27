@@ -1,0 +1,11 @@
+{
+  "title": "productId",
+  "description": "expected JSON payload for functions that require a productId",
+  "type": "object",
+  "properties": {
+    "productId": {
+      "type": "integer"
+    }
+  },
+  "required": ["productId"]
+}

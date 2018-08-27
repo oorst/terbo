@@ -1,0 +1,22 @@
+{
+  "title": "scm.update_component(json)",
+  "description": "expected JSON payload for scm.update_component(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer",
+      "description": "id of the caller"
+    },
+    "componentId": {
+      "type": "integer"
+    },
+    "productId": {
+      "type": "integer"
+    },
+    "quantity": {
+      "type": "number"
+    }
+  },
+  "required": ["userId", "componentId"],
+  "additionalProperties": false
+}

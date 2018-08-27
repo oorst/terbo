@@ -79,11 +79,11 @@ BEGIN
       o.trading_name,
       o.data,
       o.url,
-      (SELECT addressId FROM payload_address),
+      (SELECT address_id FROM payload_address),
       CASE
         WHEN ($1->>'noBilling')::boolean IS TRUE THEN
-          (SELECT addressId FROM payload_address)
-        ELSE (SELECT addressId FROM billing_address)
+          (SELECT address_id FROM payload_address)
+        ELSE (SELECT address_id FROM billing_address)
       END
     FROM payload_organisation o
     RETURNING *
@@ -91,9 +91,10 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      partyId AS "partyId",
+      party_id AS "partyId",
       name,
-      tradingName AS "tradingName",
+      trading_name AS "tradingName",
+      'ORGANISATION' AS type,
       created
     FROM new_organisation
   ) r;

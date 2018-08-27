@@ -1,0 +1,34 @@
+{
+  "title": "prd.create_product(json)",
+  "description": "expected JSON payload for prd.create_product(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer",
+      "description": "id of the caller"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["PRODUCT", "SERVICE"]
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "familyId": {
+      "type": "integer"
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["name"]
+    },
+    {
+      "required": ["familyId"]
+    }
+  ],
+  "required": ["userId", "type"],
+  "additionalProperties": false
+}

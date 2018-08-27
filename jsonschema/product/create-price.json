@@ -1,0 +1,37 @@
+{
+  "title": "prd.create_price(json)",
+  "description": "expected JSON payload for prd.create_price(json)",
+  "type": "object",
+  "properties": {
+    "productId": {
+      "type": "integer",
+      "description": "product_id of the product"
+    },
+    "cost": {
+      "type": "number"
+    },
+    "gross": {
+      "type": "number"
+    },
+    "marginId": {
+      "type": "integer"
+    },
+    "margin": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "markupId": {
+      "type": "integer"
+    },
+    "markup": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "tax": {
+      "type": "boolean"
+    }
+  },
+  "required": ["productId"],
+  "additionalProperties": false
+}

@@ -1,11 +1,17 @@
 \ir get-product.sql
 \ir get-product-view.sql
+\ir create-price.sql
 \ir create-product.sql
+\ir create-product-uom.sql
+\ir create-uom.sql
 \ir delete-product.sql
 \ir update-product.sql
 \ir update-pricing.sql
 -- \ir update-composition.sql
+\ir get-components.sql
+\ir get-margins.sql
 \ir get-markups.sql
+\ir get-price.sql
 \ir get-uoms.sql
 \ir search.sql
 \ir current-cost.sql

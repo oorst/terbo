@@ -22,7 +22,7 @@ LANGUAGE 'plpgsql';
 CREATE OR REPLACE FUNCTION get_party (json, OUT result json) AS
 $$
 BEGIN
-  SELECT get_party(($1->>'id')::integer) INTO result;
+  SELECT get_party(($1->>'partyId')::integer) INTO result;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

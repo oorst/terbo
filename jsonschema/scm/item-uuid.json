@@ -1,0 +1,12 @@
+{
+  "title": "itemUuid",
+  "description": "expected JSON payload for functions that require an itemUuid",
+  "type": "object",
+  "properties": {
+    "itemUuid": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$"
+    }
+  },
+  "required": ["itemUuid"]
+}

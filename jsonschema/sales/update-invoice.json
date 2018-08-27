@@ -1,0 +1,17 @@
+{
+  "title": "sales.update_invoice(json)",
+  "description": "expected payload for sales.update_invoice(json)",
+  "properties": {
+    "invoiceId": {
+      "type": "integer"
+    },
+    "period": {
+      "type": "integer"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": ["invoiceId"],
+  "additionalProperties": false
+}

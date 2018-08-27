@@ -11,7 +11,7 @@ BEGIN
 
     WITH payload AS (
       SELECT
-        j."orderId" AS document_id,
+        j."orderId" AS order_id,
         j."productId" AS product_id,
         name,
         code,
@@ -21,6 +21,7 @@ BEGIN
         gross
       FROM json_to_record($1) AS j (
         "orderId"   integer,
+        "productId" integer,
         name        text,
         code        text,
         description text,
@@ -55,7 +56,7 @@ BEGIN
     FROM (
       SELECT
         line_item_id AS "lineItemId",
-        dorder_id AS "orderId",
+        order_id AS "orderId",
         product_id AS "productId",
         code,
         name,
