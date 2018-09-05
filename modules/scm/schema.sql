@@ -35,20 +35,22 @@ CREATE SCHEMA scm
     item_uuid      uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     product_id     integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
     -- Identifier, should be unique amongst sub items
-    type          scm_item_t,
+    type           scm_item_t,
     prototype_uuid uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
-    name          text,
-    data          jsonb,
-    attributes    jsonb,
+    name           text,
+    short_desc     text,
+    description    text,
+    data           jsonb,
+    attributes     jsonb,
     -- Explode composite products when generating bill of quanitities etc
-    explode       integer DEFAULT 1,
+    explode        integer DEFAULT 1,
     route_id       integer REFERENCES route (route_id) ON DELETE SET NULL,
     -- A set price takes precedence over a calculated price
     gross          numeric(10,2),
     net            numeric(10,2),
     weight         numeric(10,3),
     created        timestamp DEFAULT CURRENT_TIMESTAMP,
-    end_at          timestamp,
+    end_at         timestamp,
     modified       timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
@@ -166,16 +168,15 @@ CREATE SCHEMA scm
     SELECT
       i.item_uuid,
       i.type,
-      i.name,
       p.product_id,
       p.type AS product_type,
       p.sku,
-      COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS "$code",
-      COALESCE(i.name, p.name, fam.name) AS "$name",
-      COALESCE(p.description, fam.description) AS "$description",
-      p.created,
-      p.modified
-    FROM item i
+      COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS code,
+      COALESCE(i.name, p.name, fam.name) AS name,
+      COALESCE(i.short_desc, p.short_desc, fam.short_desc) AS short_desc,
+      i.created,
+      i.modified
+    FROM scm.item i
     LEFT JOIN prd.product p
       USING (product_id)
     LEFT JOIN prd.product fam

@@ -20,6 +20,7 @@ BEGIN
         SELECT
           CASE p.key
             WHEN 'productId' THEN 'product_id'
+            WHEN 'shortDescription' THEN 'short_desc'
             ELSE p.key
           END AS column,
           CASE
@@ -31,10 +32,7 @@ BEGIN
             ELSE quote_literal(p.value)
           END AS value
         FROM json_each_text($1) p
-        WHERE p.key != 'itemUuid' AND p.key IN (
-          'name',
-          'gross'
-        )
+        WHERE p.key != 'itemUuid'
       ) q
     ) c
   );

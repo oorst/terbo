@@ -8,6 +8,9 @@
     "notes": {
       "type": "string"
     },
+    "nickname": {
+      "type": "string"
+    },
     "purchaseOrderNumber": {
       "type": "string"
     }

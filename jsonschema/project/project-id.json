@@ -1,0 +1,11 @@
+{
+  "title": "projectId",
+  "description": "expected JSON payload for functions that require a projectId",
+  "type": "object",
+  "properties": {
+    "projectId": {
+      "type": "integer"
+    }
+  },
+  "required": ["projectId"]
+}

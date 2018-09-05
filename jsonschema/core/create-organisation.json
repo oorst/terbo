@@ -18,7 +18,7 @@
       "pattern": "ORGANISATION"
     }
   },
-  "oneOf": [
+  "anyOf": [
     {
       "required": ["name"]
     },

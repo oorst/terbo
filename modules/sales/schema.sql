@@ -8,6 +8,7 @@ CREATE SCHEMA sales
     order_id            serial PRIMARY KEY,
     buyer_id            integer REFERENCES party (party_id) ON DELETE SET NULL,
     status              order_status_t DEFAULT 'PENDING',
+    data                jsonb,
     notes               text,
     purchase_order_num  text,
     created             timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -41,15 +42,17 @@ CREATE SCHEMA sales
   CREATE TABLE quote (
     quote_id    serial PRIMARY KEY,
     order_id    integer REFERENCES sales.order (order_id) ON DELETE CASCADE,
-    period      integer NOT NULL DEFAULT 30,
+    period      smallint NOT NULL DEFAULT 30,
     expiry_date date,
     contact_id  integer REFERENCES person (party_id),
     notes       text,
     status      document_status_t DEFAULT 'DRAFT',
+    data        jsonb,
     issued_at   timestamp,
     created     timestamp DEFAULT CURRENT_TIMESTAMP,
     created_by  integer REFERENCES person (party_id),
-    modified    timestamp
+    modified    timestamp,
+    CONSTRAINT valid_period CHECK(period >= 0)
   )
 
   CREATE TABLE payment (
@@ -64,20 +67,17 @@ CREATE SCHEMA sales
     order_id            integer REFERENCES sales.order (order_id) ON DELETE CASCADE,
     product_id          integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
     -- The order in which the line items appear in a document
-    position            smallint,
+    line_position       smallint,
     code                text,
     name                text,
     description         text,
-    -- Misc data to be stored with line item
     data               jsonb,
     -- Percentage discount
-    discount            numeric(3,2),
+    discount            numeric(5,2),
     -- Dollar amount discount
-    discountAmount      numeric(10,2),
+    discount_amount      numeric(10,2),
     -- Gross price charged
     gross               numeric(10,2),
-    -- Net price charged, no extra tax is applied
-    net                 numeric(10,2),
     uom_id              integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
     quantity            numeric(10,3),
     tax                 boolean DEFAULT TRUE,
@@ -86,4 +86,27 @@ CREATE SCHEMA sales
     note_importance     li_note_importance_t DEFAULT 'NORMAL',
     created             timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at              timestamp
-  );
+  )
+
+  CREATE OR REPLACE VIEW line_item_v AS
+    SELECT
+      li.line_item_id,
+      li.product_id,
+      li.quantity,
+      uom.name AS uom_name,
+      uom.abbr AS uom_abbr,
+      pv.code,
+      pv.name,
+      pr.gross,
+      (li.quantity * pr.gross)::numeric(10,2) AS line_total,
+      (li.quantity * pr.gross * 0.1)::numeric(10,2) AS line_tax
+    FROM line_item li
+    LEFT JOIN prd.product p
+      USING (product_id)
+    LEFT JOIN prd.uom uom
+      ON uom.uom_id = p.uom_id
+    LEFT JOIN prd.product_list_v pv
+      ON pv.product_id = li.product_id
+    LEFT JOIN prd.price_v pr
+      ON pr.product_id = li.product_id
+    WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP;

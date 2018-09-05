@@ -13,6 +13,7 @@ CREATE SCHEMA prd
     family_id         integer REFERENCES product (product_id),
     type              product_t DEFAULT 'PRODUCT',
     name              text,
+    short_desc        text,
     description       text,
     url               text,
     code              text,
@@ -97,10 +98,10 @@ CREATE SCHEMA prd
   CREATE TABLE margin (
     margin_id serial PRIMARY KEY,
     name      text,
-    amount    numeric(5,2),
+    amount    numeric(4,3),
     created   timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at    timestamp,
-    CONSTRAINT margin_value CHECK(margin > 0 AND margin < 1)
+    CONSTRAINT amount_value CHECK(amount > 0.000 AND amount < 1.000)
   )
 
   CREATE TABLE markup (
@@ -166,19 +167,18 @@ CREATE SCHEMA prd
   --   LEFT JOIN prd.product fam
   --     ON fam.product_id = p.family_id
 
-  CREATE OR REPLACE VIEW prd.product_list_v AS
+  CREATE OR REPLACE VIEW product_list_v AS
     SELECT
       p.product_id,
       p.type,
-      p.sku,
-      COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS "$code",
-      COALESCE(p.name, fam.name) AS "$name",
-      COALESCE(p.description, fam.description) AS "$description",
+      COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS code,
+      COALESCE(p.name, fam.name) AS name,
+      COALESCE(p.short_desc, fam.short_desc) AS short_desc,
       p.created,
       p.modified
     FROM prd.product p
     LEFT JOIN prd.product fam
-      ON fam.product_id = p.family_id    
+      ON fam.product_id = p.family_id
 
   -- Get the current price record for a product
   CREATE OR REPLACE VIEW price_v AS

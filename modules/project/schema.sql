@@ -1,37 +1,39 @@
 CREATE SCHEMA prj
   CREATE TABLE job (
     job_id          serial PRIMARY KEY,
-    prerequisite_id integer REFERENCES job (job_id) ON DELETE CASCADE,
-    parent_id       integer REFERENCES job (job_id) ON DELETE CASCADE,
-    dependency_id   integer REFERENCES job (job_id) ON DELETE CASCADE,
-    name           text,
-    shortDesc      text,
-    lag            interval,
-    lead           interval,
+    prototype_id    integer REFERENCES job (job_id) ON DELETE RESTRICT,
+    dependant_id    integer REFERENCES job (job_id) ON DELETE CASCADE,
+    name            text,
+    short_desc      text,
+    desription      text,
+    lag             interval,
+    lead            interval,
     created_by      integer REFERENCES person (party_id) ON DELETE SET NULL,
-    created        timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified       timestamp DEFAULT CURRENT_TIMESTAMP
+    created         timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified        timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
   CREATE TABLE project (
-    project_id serial PRIMARY KEY,
-    job_id     integer REFERENCES job (job_id) ON DELETE CASCADE,
-    address_id integer REFERENCES full_address (address_id) ON DELETE SET NULL,
-    owner_id   integer REFERENCES party (party_id) ON DELETE SET NULL,
-    name      text,
-    nickname  text,
-    created_by integer REFERENCES person (party_id) ON DELETE SET NULL,
-    created   timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified  timestamp DEFAULT CURRENT_TIMESTAMP
+    project_id  serial PRIMARY KEY,
+    job_id      integer REFERENCES job (job_id) ON DELETE CASCADE,
+    address_id  integer REFERENCES full_address (address_id) ON DELETE SET NULL,
+    owner_id    integer REFERENCES party (party_id) ON DELETE SET NULL,
+    name        text,
+    nickname    text,
+    short_desc  text,
+    description text,
+    created_by  integer REFERENCES person (party_id) ON DELETE SET NULL,
+    created     timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified    timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
-  CREATE TABLE projectJob (
+  CREATE TABLE project_job (
     project_id integer REFERENCES project (project_id),
     job_id     integer REFERENCES job (job_id),
     PRIMARY KEY (project_id)
   )
 
-  CREATE TABLE projectRole (
+  CREATE TABLE project_role (
     project_id integer REFERENCES project (project_id),
     party_id   integer REFERENCES person (party_id)
   )

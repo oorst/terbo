@@ -1,0 +1,46 @@
+{
+  "title": "scm.create_item(json)",
+  "description": "expected JSON payload for scm.create_item(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer",
+      "description": "id of the caller"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["ITEM", "PART", "PRODUCT", "SUBASSEMBLY"]
+    },
+    "name": {
+      "type": "string"
+    },
+    "productId": {
+      "type": "integer"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "type": {
+          "type": "string",
+          "pattern": "ITEM"
+        }
+      },
+      "required": ["name"]
+    },
+    {
+      "properties": {
+        "type": {
+          "type": "string",
+          "pattern": "PRODUCT"
+        }
+      },
+      "required": ["productId"]
+    },
+    {
+      "required": ["familyId"]
+    }
+  ],
+  "required": ["userId", "type"],
+  "additionalProperties": false
+}

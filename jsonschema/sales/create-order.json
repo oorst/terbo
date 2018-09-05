@@ -9,6 +9,9 @@
     "buyerId": {
       "type": "integer",
       "description": "partyId of the buyer for the order"
+    },
+    "data": {
+      "type": "object"
     }
   },
   "required": ["userId", "buyerId"]

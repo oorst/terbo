@@ -1,0 +1,11 @@
+{
+  "title": "quoteId",
+  "description": "expected JSON payload for functions that require a quoteId",
+  "type": "object",
+  "properties": {
+    "quoteId": {
+      "type": "integer"
+    }
+  },
+  "required": ["quoteId"]
+}

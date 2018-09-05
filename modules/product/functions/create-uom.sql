@@ -29,7 +29,7 @@ BEGIN
       name,
       abbr,
       type
-    FROM product_uom
+    FROM uom
   ) r;
 END
 $$

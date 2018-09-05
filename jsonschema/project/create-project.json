@@ -1,0 +1,14 @@
+{
+  "title": "prj.create_project(json)",
+  "description": "expected JSON payload for prj.create_project(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer"
+    },
+    "nameId": {
+      "type": "string"
+    }
+  },
+  "required": ["userId", "name"]
+}

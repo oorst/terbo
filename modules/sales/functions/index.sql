@@ -13,8 +13,9 @@
 \ir issue-quote.sql
 \ir create-line-item.sql
 \ir update-invoice.sql
+\ir quote.sql
 \ir remove-line-item.sql
 \ir update-invoice.sql
 \ir update-line-item.sql
-\ir update-purchase-order.sql
+\ir update-order.sql
 \ir update-quote.sql

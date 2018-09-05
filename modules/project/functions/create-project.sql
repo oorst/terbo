@@ -1,10 +1,6 @@
 CREATE OR REPLACE FUNCTION prj.create_project (json, OUT result json) AS
 $$
 BEGIN
-  IF $1->>'userId' IS NULL THEN
-    RAISE EXCEPTION 'must provide a userId';
-  END IF;
-
   WITH payload AS (
     SELECT
       j."userId" AS party_id

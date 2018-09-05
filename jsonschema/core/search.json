@@ -1,0 +1,13 @@
+{
+  "title": "search",
+  "description": "expected JSON payload for search functions",
+  "type": "object",
+  "properties": {
+    "search": {
+      "type": "string",
+      "description": "search string should be one or more characters",
+      "pattern": ".+"
+    }
+  },
+  "required": ["search"]
+}

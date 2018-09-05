@@ -5,6 +5,7 @@ BEGIN
     SELECT
       o.order_id,
       o.status,
+      o.nickname,
       o.notes,
       o.created_by,
       o.buyer_id,
@@ -26,16 +27,14 @@ BEGIN
       li.order_id AS "orderId",
       li.product_id AS "productId",
       li.position,
-      coalesce(li.code, p._code) AS code,
-      coalesce(li.name, p._name) AS name,
-      coalesce(li.description, p._description) AS description,
+      coalesce(li.code, p.code) AS code,
+      coalesce(li.name, p.name) AS name,
       uom.name AS "uomName",
       uom.abbr AS "uomAbbr",
       li.data,
       li.quantity,
-      li.gross,
-      coalesce(li.gross, prd.product_gross(p.product_id)) AS "$gross"
-    FROM sales.line_item li
+      li.gross
+    FROM sales.line_item_v li
     INNER JOIN document
       USING (order_id)
     LEFT JOIN prd.product_list_v p
@@ -44,16 +43,17 @@ BEGIN
       ON pp.product_id = li.product_id
     LEFT JOIN prd.uom uom
       ON uom.uom_id = pp.uom_id
-    WHERE li.end_at IS NULL
     ORDER BY position, line_item_id
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
       document.order_id AS "orderId",
+      document.buyer_id AS "buyerId",
       document.buyer_name AS "buyerName",
       document.buyer_type AS "buyerType",
       document.status,
+      document.nickname,
       document.purchase_order_num AS "purchaseOrderNumber",
       document.created,
       document.notes,

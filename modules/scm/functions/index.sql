@@ -1,10 +1,12 @@
 \echo 'Creating SCM functions'
+\ir create-component.sql
 \ir create-item.sql
 \ir create-task.sql
 \ir create-route.sql
 \ir delete-component.sql
 \ir delete-item.sql
 \ir delete-route.sql
+\ir get-components.sql
 \ir get-item.sql
 \ir get-route.sql
 \ir get-task.sql
@@ -17,9 +19,7 @@
 \ir update-route.sql
 \ir item-boq.sql
 \ir list-items.sql
--- \ir search-items.sql
 \ir search-routes.sql
 \ir search-tasks.sql
 \ir update-component.sql
-\ir delete-subassembly.sql
 \ir get-line-item.sql

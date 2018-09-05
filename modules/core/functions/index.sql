@@ -9,3 +9,4 @@
 \ir search-party.sql
 \ir core-setting.sql
 \ir update-modified.sql
+\ir update-organisation.sql
