@@ -1,6 +1,7 @@
 \ir create-project.sql
 \ir delete-project.sql
 \ir get-project.sql
+\ir project.sql
 \ir get-projects.sql
 \ir get-boqs.sql
 \ir get-jobs.sql

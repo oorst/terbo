@@ -15,11 +15,11 @@
 \ir json-to-item-boq.sql
 \ir insert-item.sql
 \ir item-boq.sql
+\ir route.sql
 \ir update-item.sql
 \ir update-route.sql
 \ir item-boq.sql
 \ir list-items.sql
-\ir search-routes.sql
-\ir search-tasks.sql
+\ir list-routes.sql
 \ir update-component.sql
 \ir get-line-item.sql

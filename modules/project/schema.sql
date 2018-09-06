@@ -5,7 +5,7 @@ CREATE SCHEMA prj
     dependant_id    integer REFERENCES job (job_id) ON DELETE CASCADE,
     name            text,
     short_desc      text,
-    desription      text,
+    description      text,
     lag             interval,
     lead            interval,
     created_by      integer REFERENCES person (party_id) ON DELETE SET NULL,
@@ -18,13 +18,7 @@ CREATE SCHEMA prj
     job_id      integer REFERENCES job (job_id) ON DELETE CASCADE,
     address_id  integer REFERENCES full_address (address_id) ON DELETE SET NULL,
     owner_id    integer REFERENCES party (party_id) ON DELETE SET NULL,
-    name        text,
-    nickname    text,
-    short_desc  text,
-    description text,
-    created_by  integer REFERENCES person (party_id) ON DELETE SET NULL,
-    created     timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified    timestamp DEFAULT CURRENT_TIMESTAMP
+    nickname    text
   )
 
   CREATE TABLE project_job (

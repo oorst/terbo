@@ -7,19 +7,21 @@ Return projects for owners and creators.
 CREATE OR REPLACE FUNCTION prj.list_projects (json, OUT result json) AS
 $$
 DECLARE
-  userId integer;
+  _user_id integer := ($1->>'userId')::integer;
 BEGIN
-  userId = ($1->>'userId');
-
   SELECT json_strip_nulls(json_agg(r)) INTO result
   FROM (
     SELECT
       p.project_id AS "projectId",
-      p.name,
-      p.description,
-      p.created
-    FROM massey.project p
-    WHERE p.owner_id = userId OR p.created_by = userId
+      p.nickname,
+      j.name,
+      j.short_desc AS "shortDescription",
+      j.created,
+      j.created_by AS "createdBy"
+    FROM prj.project p
+    INNER JOIN prj.job j
+      USING (job_id)
+    WHERE p.owner_id = _user_id OR p.created_by = _user_id
   ) r;
 END
 $$

@@ -1,0 +1,19 @@
+{
+  "title": "scm.create_route(json)",
+  "description": "expected JSON payload for scm.create_component(json)",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "productId": {
+      "type": "integer"
+    },
+    "userId": {
+      "type": "integer",
+      "description": "id of the caller"
+    }
+  },
+  "required": ["name", "productId", "userId"],
+  "additionalProperties": false
+}

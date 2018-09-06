@@ -10,10 +10,11 @@ CREATE TYPE scm_task_concurrency_t AS ENUM ('SAME', 'ALL');
 
 CREATE SCHEMA scm
   CREATE TABLE route (
-    route_id serial PRIMARY KEY,
-    name     text,
-    data     jsonb,
-    modified timestamp DEFAULT CURRENT_TIMESTAMP
+    route_id   serial PRIMARY KEY,
+    product_id integer REFERENCES prd.product (product_id) ON DELETE CASCADE,
+    name       text,
+    created_by integer REFERENCES party (party_id) ON DELETE SET NULL,
+    modified   timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
   -- CREATE TABLE subRoute (

@@ -17,12 +17,11 @@ BEGIN
     RETURNING *
   ), project AS (
     INSERT INTO prj.project (
-      job_id,
-      created_by
-    ) VALUES (
-      (SELECT job_id FROM job),
-      (SELECT party_id FROM payload)
+      job_id
     )
+    SELECT
+      p.party_id
+    FROM payload p
     RETURNING *
   )
   SELECT to_json(r) INTO result

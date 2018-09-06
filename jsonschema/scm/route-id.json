@@ -1,0 +1,11 @@
+{
+  "title": "routeId",
+  "description": "expected JSON payload for functions that require a routeId",
+  "type": "object",
+  "properties": {
+    "routeId": {
+      "type": "integer"
+    }
+  },
+  "required": ["routeId"]
+}
