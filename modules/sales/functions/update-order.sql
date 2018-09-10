@@ -13,6 +13,7 @@ BEGIN
         SELECT
           CASE p.key
             WHEN 'contactId' THEN 'contact_id'
+            WHEN 'shortDescription' THEN 'short_desc'
             WHEN 'purchaseOrderNumber' THEN 'purchase_order_num'
             ELSE p.key
           END AS column,

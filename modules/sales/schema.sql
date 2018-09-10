@@ -8,8 +8,10 @@ CREATE SCHEMA sales
     order_id            serial PRIMARY KEY,
     buyer_id            integer REFERENCES party (party_id) ON DELETE SET NULL,
     status              order_status_t DEFAULT 'PENDING',
+    short_desc          text,
     data                jsonb,
     notes               text,
+    memo                text,
     purchase_order_num  text,
     created             timestamp DEFAULT CURRENT_TIMESTAMP,
     created_by          integer REFERENCES person (party_id) NOT NULL
@@ -63,7 +65,7 @@ CREATE SCHEMA sales
   )
 
   CREATE TABLE line_item (
-    line_item_id         serial PRIMARY KEY,
+    line_item_id        serial PRIMARY KEY,
     order_id            integer REFERENCES sales.order (order_id) ON DELETE CASCADE,
     product_id          integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
     -- The order in which the line items appear in a document

@@ -1,0 +1,31 @@
+{
+  "title": "sales.create_line_item(json)",
+  "description": "expected JSON payload for sales.create_line_item(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer",
+      "description": "id of the caller"
+    },
+    "orderId": {
+      "type": "integer"
+    },
+    "productId": {
+      "type": "integer"
+    },
+    "itemUuid": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$"
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["productId"]
+    },
+    {
+      "required": ["itemUuid"]
+    }
+  ],
+  "required": ["userId", "orderId"],
+  "additionalProperties": false
+}

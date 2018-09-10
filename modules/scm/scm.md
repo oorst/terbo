@@ -9,8 +9,6 @@
 
 All items must be associated with a Product.
 
-#### Sub-assemblies
-
 #### Parts
 
 ## Routing

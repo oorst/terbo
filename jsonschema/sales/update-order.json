@@ -13,6 +13,9 @@
     },
     "purchaseOrderNumber": {
       "type": "string"
+    },
+    "shortDescription": {
+      "type": "string"
     }
   },
   "required": ["orderId"],

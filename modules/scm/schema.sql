@@ -34,17 +34,14 @@ CREATE SCHEMA scm
   -- table and the item instance table
   CREATE TABLE item (
     item_uuid      uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    product_id     integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
-    -- Identifier, should be unique amongst sub items
-    type           scm_item_t,
     prototype_uuid uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
+    product_id     integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
+    type           scm_item_t,
     name           text,
     short_desc     text,
     description    text,
     data           jsonb,
     attributes     jsonb,
-    -- Explode composite products when generating bill of quanitities etc
-    explode        integer DEFAULT 1,
     route_id       integer REFERENCES route (route_id) ON DELETE SET NULL,
     -- A set price takes precedence over a calculated price
     gross          numeric(10,2),
@@ -60,7 +57,20 @@ CREATE SCHEMA scm
     root_uuid      uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
     parent_uuid    uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
     item_uuid      uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
-    quantity       numeric(10,3)
+    quantity       numeric(10,3),
+    end_at         timestamp
+  )
+
+  /*
+  Link an Item to a Sales Order Line Item
+  */
+  CREATE TABLE line_item (
+    item_uuid    uuid REFERENCES item (item_uuid) ON DELETE SET NULL,
+    line_item_id integer REFERENCES sales.line_item (line_item_id) ON DELETE CASCADE,
+    quantity     numeric(10,3),
+    created      timestamp DEFAULT CURRENT_TIMESTAMP,
+    created_by   integer REFERENCES party (party_id),
+    PRIMARY KEY (item_uuid, line_item_id)
   )
 
   CREATE TABLE item_instance (
@@ -184,34 +194,31 @@ CREATE SCHEMA scm
       ON fam.product_id = p.family_id
     WHERE i.end_at IS NULL OR i.end_at > CURRENT_TIMESTAMP;
 
---
--- Triggers
---
-
--- CREATE OR REPLACE FUNCTION scm.task_instance_tg () RETURNS TRIGGER AS
--- $$
--- BEGIN
---   IF TG_OP = 'DELETE' THEN
---     DELETE FROM scm.boq WHERE boqId = OLD.boqId;
---
---     RETURN OLD;
---   ELSIF TG_OP = 'INSERT' THEN
---     -- Insert a new BoQ for the task instance and provide its boqId to the new
---     -- task_instance
---     WITH new_boq AS (
---       INSERT INTO scm.boq DEFAULT VALUES RETURNING boqId
---     )
---     SELECT boqId INTO NEW.boqId
---     FROM new_boq;
---
---     RETURN NEW;
---   END IF;
--- END
--- $$
--- LANGUAGE 'plpgsql';
---
--- CREATE TRIGGER task_instance_tg BEFORE INSERT ON scm.task_instance
---   FOR EACH ROW EXECUTE PROCEDURE scm.task_instance_tg();
---
--- CREATE TRIGGER task_instance_delete_tg AFTER DELETE ON scm.task_instance
---   FOR EACH ROW EXECUTE PROCEDURE scm.task_instance_tg();
+CREATE OR REPLACE VIEW sales.line_item_v AS
+  SELECT
+    li.line_item_id,
+    li.order_id,
+    li.product_id,
+    li.line_position,
+    li.quantity,
+    coalesce(pv.name, iv.name) AS name,
+    coalesce(pv.short_desc, iv.short_desc) AS short_desc,
+    coalesce(pv.code, iv.code) AS code,
+    coalesce(i.gross, ip.gross, pp.gross) AS gross,
+    coalesce(ip.cost, pp.cost) AS cost,
+    (coalesce(ip.gross, pp.gross) * li.quantity)::numeric(10,2) AS line_total,
+    li.data
+  FROM sales.line_item li
+  LEFT JOIN prd.product_list_v pv
+    ON pv.product_id = li.product_id
+  LEFT JOIN prd.price_v pp
+    ON pp.product_id = li.product_id
+  LEFT JOIN scm.line_item sli
+    USING (line_item_id)
+  LEFT JOIN scm.item_list_v iv
+    ON iv.item_uuid = sli.item_uuid
+  LEFT JOIN scm.item i
+    ON i.item_uuid = sli.item_uuid
+  LEFT JOIN scm.price(sli.item_uuid) ip
+    ON ip IS NOT NULL
+  WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP;

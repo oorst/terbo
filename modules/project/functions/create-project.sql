@@ -3,7 +3,7 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      j."userId" AS party_id
+      j."userId" AS created_by
     FROM json_to_record($1) AS j (
       "userId" integer
     )
@@ -12,16 +12,16 @@ BEGIN
       created_by
     )
     SELECT
-      p.party_id
+      p.created_by
     FROM payload p
-    RETURNING *
+    RETURNING job_id
   ), project AS (
     INSERT INTO prj.project (
       job_id
     )
     SELECT
-      p.party_id
-    FROM payload p
+      job.job_id
+    FROM job
     RETURNING *
   )
   SELECT to_json(r) INTO result

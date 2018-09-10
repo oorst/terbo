@@ -22,7 +22,7 @@
       "exclusiveMaximum": 1
     },
     "markupId": {
-      "type": "integer"
+      "type": ["integer", "null"]
     },
     "markup": {
       "type": "number",

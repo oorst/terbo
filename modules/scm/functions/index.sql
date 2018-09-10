@@ -15,6 +15,7 @@
 \ir json-to-item-boq.sql
 \ir insert-item.sql
 \ir item-boq.sql
+\ir item.sql
 \ir route.sql
 \ir update-item.sql
 \ir update-route.sql
