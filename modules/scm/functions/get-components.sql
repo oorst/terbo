@@ -11,13 +11,20 @@ BEGIN
       i.product_id AS "productId",
       p.name,
       p.code,
+      (pr.gross * c.quantity)::numeric(10,2) AS gross,
+      (pr.cost * c.quantity)::numeric(10,2) AS cost,
+      (pr.profit * c.quantity)::numeric(10,2) AS profit,
+      pr.margin,
       c.quantity
     FROM scm.component c
     INNER JOIN scm.item i
       USING (item_uuid)
-    LEFT JOIN prd.product p
+    LEFT JOIN prd.product_list_v p
       USING (product_id)
+    LEFT JOIN prd.price_v pr
+      ON pr.product_id = i.product_id
     WHERE c.parent_uuid = ($1->>'itemUuid')::uuid
+    ORDER BY c.component_id
   ) r;
 END
 $$

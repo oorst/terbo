@@ -1,6 +1,7 @@
 \ir create-line-item.sql
 \ir create-order.sql
 \ir create-quote.sql
+\ir delete-order.sql
 \ir get-quote.sql
 \ir get-invoice.sql
 \ir list-invoices.sql

@@ -12,21 +12,22 @@ BEGIN
       buyer.party_id AS "issuedToId",
       contact.name AS "contactName",
       contact.party_id AS "contactId",
-      q.created
+      q.created,
+      CASE
+        WHEN q.created < o.modified THEN TRUE
+        ELSE NULL
+      END AS outdated
     FROM sales.quote q
     INNER JOIN sales.order o
       USING (order_id)
-    INNER JOIN party_v buyer
+    INNER JOIN json_to_record($1) AS j (
+      "orderId" integer
+    ) ON j."orderId" = o.order_id
+    LEFT JOIN party_v buyer
       ON buyer.party_id = o.buyer_id
     LEFT JOIN party_v contact -- Left join as a document may not have a contact
       ON contact.party_id = q.contact_id
-    WHERE to_tsvector(
-      concat_ws(' ',
-        q.order_id,
-        buyer.name,
-        contact.name
-      )
-    ) @@ plainto_tsquery($1->>'search')
+    ORDER BY q.quote_id DESC
   ) r;
 END
 $$

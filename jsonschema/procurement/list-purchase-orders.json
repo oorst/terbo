@@ -1,0 +1,17 @@
+{
+  "title": "pcm.list_purchase_orders(JSON)",
+  "description": "expected JSON payload for pcm.list_purchase_orders(JSON)",
+  "type": "object",
+  "properties": {
+    "orderId": {
+      "type": "integer",
+      "description": "order_id of sales.order"
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["orderId"]
+    }
+  ],
+  "additionalProperties": false
+}

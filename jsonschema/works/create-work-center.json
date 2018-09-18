@@ -1,0 +1,15 @@
+{
+  "title": "works.create_work_center(json)",
+  "description": "expected JSON payload for works.create_work_order(json)",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "integer",
+      "description": "userId of caller"
+    }
+  },
+  "required": ["name", "userId"]
+}

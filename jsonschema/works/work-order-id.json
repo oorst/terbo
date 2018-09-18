@@ -1,0 +1,11 @@
+{
+  "title": "workOrderId",
+  "description": "expected JSON payload for functions that require a workOrderId",
+  "type": "object",
+  "properties": {
+    "workOrderId": {
+      "type": "integer"
+    }
+  },
+  "required": ["workOrderId"]
+}

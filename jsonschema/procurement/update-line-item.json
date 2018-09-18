@@ -1,0 +1,14 @@
+{
+  "title": "pcm.update_line_item(json)",
+  "description": "expected JSON payload for pcm.update_line_item(json)",
+  "type": "object",
+  "properties": {
+    "lineItemId": {
+      "type": "integer"
+    },
+    "quantity": {
+      "type": "number"
+    }
+  },
+  "required": ["lineItemId"]
+}

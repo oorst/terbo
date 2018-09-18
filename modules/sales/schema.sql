@@ -1,5 +1,5 @@
 CREATE TYPE document_status_t AS ENUM ('DRAFT', 'ISSUED', 'DELETED', 'VOID');
-CREATE TYPE order_status_t AS ENUM ('PENDING', 'FULFILLED', 'DELIVERED');
+CREATE TYPE order_status_t AS ENUM ('PENDING', 'IN_PROGRESS', 'FULFILLED', 'DELIVERED');
 CREATE TYPE payment_status_t AS ENUM ('OWING', 'PAID');
 CREATE TYPE li_note_importance_t AS ENUM ('NORMAL', 'IMPORTANT');
 
@@ -14,7 +14,8 @@ CREATE SCHEMA sales
     memo                text,
     purchase_order_num  text,
     created             timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by          integer REFERENCES person (party_id) NOT NULL
+    created_by          integer REFERENCES person (party_id) NOT NULL,
+    modified            timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
   CREATE TABLE invoice (
@@ -87,6 +88,7 @@ CREATE SCHEMA sales
     note                text,
     note_importance     li_note_importance_t DEFAULT 'NORMAL',
     created             timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified            timestamp,
     end_at              timestamp
   )
 
@@ -112,3 +114,15 @@ CREATE SCHEMA sales
     LEFT JOIN prd.price_v pr
       ON pr.product_id = li.product_id
     WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP;
+
+--
+-- Triggers
+--
+CREATE TRIGGER sales_update_order_tg BEFORE UPDATE ON sales.order
+      FOR EACH ROW EXECUTE PROCEDURE sales.update_order_tg();
+
+CREATE TRIGGER sales_update_line_item_tg BEFORE UPDATE ON sales.line_item
+      FOR EACH ROW EXECUTE PROCEDURE sales.update_line_item_tg();
+
+CREATE TRIGGER sales_delete_order_tg BEFORE DELETE ON sales.order
+      FOR EACH ROW EXECUTE PROCEDURE sales.delete_order_tg();

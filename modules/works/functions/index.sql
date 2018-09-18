@@ -1,0 +1,9 @@
+\ir create-service.sql
+\ir create-work-center.sql
+\ir create-work-order.sql
+\ir create-work-orders.sql
+\ir list-services.sql
+\ir list-work-centers.sql
+\ir list-work-orders.sql
+\ir work-center.sql
+\ir work-order.sql

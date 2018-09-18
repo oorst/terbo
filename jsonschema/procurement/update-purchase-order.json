@@ -1,0 +1,14 @@
+{
+  "title": "pcm.update_purchase_order(json)",
+  "description": "expected JSON payload for pcm.update_purchase_order(json)",
+  "type": "object",
+  "properties": {
+    "purchaseOrderId": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": ["purchaseOrderId"]
+}

@@ -25,7 +25,7 @@ BEGIN
   SELECT json_strip_nulls(json_agg(r)) INTO result
   FROM (
     SELECT
-      party_id AS id,
+      party_id AS "partyId",
       name,
       trading_name AS "tradingName",
       email,

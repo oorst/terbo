@@ -44,6 +44,46 @@ BEGIN
         name
       FROM item
     ) r;
+  ELSIF $1->>'itemUuid' IS NOT NULL THEN -- Clone the given item
+    WITH payload AS (
+      SELECT
+        j."orderId" AS order_id,
+        j."itemUuid" AS item_uuid,
+        j."userId" AS created_by
+      FROM json_to_record($1) AS j (
+        "orderId"  integer,
+        "itemUuid" uuid,
+        "userId"   integer
+      )
+    ), sales_line_item AS (
+      INSERT INTO sales.line_item (
+        order_id
+      )
+      SELECT
+        order_id
+      FROM payload
+      RETURNING line_item_id, created
+    ), scm_line_item AS (
+      INSERT INTO scm.line_item (
+        item_uuid,
+        line_item_id,
+        created_by
+      ) VALUES (
+        (SELECT item_uuid FROM payload),
+        (SELECT line_item_id FROM sales_line_item),
+        (SELECT created_by FROM payload)
+      )
+      RETURNING line_item_id
+    )
+    SELECT json_strip_nulls(to_json(r)) INTO result
+    FROM (
+      SELECT
+        li.line_item_id AS "lineItemId",
+        li.created
+      FROM scm_line_item
+      INNER JOIN sales_line_item li
+        USING (line_item_id)
+    ) r;
   END IF;
 END
 $$

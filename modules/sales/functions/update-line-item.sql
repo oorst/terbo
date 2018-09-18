@@ -30,3 +30,22 @@ BEGIN
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;
+
+-- Update modified column automatically and update parents
+CREATE OR REPLACE FUNCTION sales.update_line_item_tg () RETURNS TRIGGER AS
+$$
+BEGIN
+  SELECT CURRENT_TIMESTAMP INTO NEW.modified;
+
+  -- Update the Order the line item belongs to
+  UPDATE sales.order o SET (
+    modified
+  ) = (
+    CURRENT_TIMESTAMP
+  )
+  WHERE o.order_id = NEW.order_id;
+
+  RETURN NEW;
+END
+$$
+LANGUAGE 'plpgsql';

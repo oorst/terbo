@@ -24,6 +24,7 @@ CREATE SCHEMA prd
     supplier_code     text,
     attributes        jsonb,
     data              jsonb,
+    tracked           boolean DEFAULT FALSE,
     uom_id            integer REFERENCES uom (uom_id) ON DELETE SET NULL,
     -- Weight in kilograms for every base unit of measure
     weight            numeric(10,3),

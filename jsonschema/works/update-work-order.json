@@ -1,0 +1,18 @@
+{
+  "title": "works.update_work_order(json)",
+  "description": "expected JSON payload for works.update_work_order(json)",
+  "type": "object",
+  "properties": {
+    "workOrderId": {
+      "type": "integer"
+    },
+    "instructions": {
+      "type": "string"
+    },
+    "status": {
+      "enum": ["AUTHORISED", "IN_PROGRESS", "ABORTED", "COMPLETE"]
+    }
+  },
+  "required": ["workOrderId"],
+  "additionalProperties": false
+}

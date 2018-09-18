@@ -68,6 +68,7 @@ CREATE SCHEMA scm
     item_uuid    uuid REFERENCES item (item_uuid) ON DELETE SET NULL,
     line_item_id integer REFERENCES sales.line_item (line_item_id) ON DELETE CASCADE,
     quantity     numeric(10,3),
+    prototype    boolean DEFAULT TRUE,
     created      timestamp DEFAULT CURRENT_TIMESTAMP,
     created_by   integer REFERENCES party (party_id),
     PRIMARY KEY (item_uuid, line_item_id)
@@ -136,7 +137,7 @@ CREATE SCHEMA scm
     route_task_id serial PRIMARY KEY,
     route_id      integer REFERENCES route (route_id) ON DELETE CASCADE,
     task_id       integer REFERENCES task (task_id) ON DELETE CASCADE,
-    seqNum       integer
+    seq_num       integer
   )
 
   /**
@@ -194,11 +195,13 @@ CREATE SCHEMA scm
       ON fam.product_id = p.family_id
     WHERE i.end_at IS NULL OR i.end_at > CURRENT_TIMESTAMP;
 
+-- Replace the native sales.line_item_v to include Items
 CREATE OR REPLACE VIEW sales.line_item_v AS
   SELECT
     li.line_item_id,
     li.order_id,
     li.product_id,
+    sli.item_uuid,
     li.line_position,
     li.quantity,
     coalesce(pv.name, iv.name) AS name,

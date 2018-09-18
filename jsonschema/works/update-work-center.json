@@ -1,0 +1,27 @@
+{
+  "title": "works.update_work_center(json)",
+  "description": "expected JSON payload for works.update_work_center(json)",
+  "type": "object",
+  "properties": {
+    "workCenterId": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "productId": {
+      "type": "integer"
+    },
+    "shortDescription": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "defaultInstructions": {
+      "type": "string"
+    }
+  },
+  "required": ["workCenterId"],
+  "additionalProperties": false
+}

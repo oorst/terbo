@@ -1,0 +1,14 @@
+{
+  "title": "works.create_service(json)",
+  "description": "expected JSON payload for works.create_service(json)",
+  "type": "object",
+  "properties": {
+    "workCenterId": {
+      "type": "integer"
+    },
+    "productId": {
+      "type": "integer"
+    }
+  },
+  "required": ["workCenterId", "productId"]
+}

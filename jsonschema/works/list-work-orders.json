@@ -1,0 +1,22 @@
+{
+  "title": "works.list_work_orders(JSON)",
+  "description": "expected JSON payload for works.list_work_orders(JSON)",
+  "type": "object",
+  "properties": {
+    "pending": {
+      "type": "boolean"
+    },
+    "orderId": {
+      "type": "integer"
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["pending"]
+    },
+    {
+      "required": ["orderId"]
+    }
+  ],
+  "additionalProperties": false
+}

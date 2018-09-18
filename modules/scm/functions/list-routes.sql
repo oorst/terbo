@@ -9,7 +9,7 @@ BEGIN
   FROM (
     SELECT
       r.route_id AS "routeId",
-      p.name,
+      coalesce(r.name, p.name) AS name,
       p.code
     FROM scm.route r
     INNER JOIN prd.product_list_v p

@@ -35,3 +35,18 @@ BEGIN
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION sales.update_order_tg () RETURN TRIGGER AS
+$$
+BEGIN
+  -- When status changes from `PENDING` to 'IN_PROGRESS', the order has been
+  -- submitted.  Create all necessary work_orders, purchase_orders and
+  -- inventory requisitions for order boq
+  IF (OLD.status = 'PENDING') AND (NEW.status = 'IN_PROGESS') THEN
+    works.create_work_orders(OLD.order_id);
+    -- TODO prc.create_purchase_orders(OLD.order_id);
+    -- TODO prc.create_purchase_orders(OLD.order_id);
+  END IF;
+END
+$$
+LANGUAGE 'plpgsql';

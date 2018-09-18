@@ -1,0 +1,9 @@
+\ir create-line-item.sql
+\ir create-purchase-order.sql
+\ir create-purchase-orders.sql
+\ir get-purchase-order.sql
+\ir line-item.sql
+\ir list-purchase-orders.sql
+\ir purchase-order.sql
+\ir update-line-item.sql
+\ir update-purchase-order.sql

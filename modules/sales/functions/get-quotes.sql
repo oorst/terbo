@@ -15,7 +15,11 @@ BEGIN
       buyer.party_id AS "issuedToId",
       contact.name AS "contactName",
       contact.party_id AS "contactId",
-      q.created
+      q.created,
+      CASE
+        WHEN q.created < o.modified THEN TRUE
+        ELSE NULL
+      END AS outdated
     FROM sales.quote q
     INNER JOIN sales.order o
       USING (order_id)
