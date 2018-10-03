@@ -5,6 +5,7 @@ BEGIN
   FROM (
     SELECT
       li.line_item_id AS "lineItemId",
+      li.purchase_order_id AS "purchaseOrderId",
       li.product_id AS "productId",
       li.quantity,
       pv.name AS "productName",

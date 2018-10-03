@@ -1,0 +1,17 @@
+{
+  "title": "prj.create_job(json)",
+  "description": "expected JSON payload for prj.create_job(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer"
+    },
+    "jobId": {
+      "type": "number"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": ["userId", "jobId"]
+}

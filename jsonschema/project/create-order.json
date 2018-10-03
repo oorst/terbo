@@ -1,0 +1,15 @@
+{
+  "title": "prj.create_order(json)",
+  "description": "expected JSON payload for prj.create_order(json)",
+  "type": "object",
+  "properties": {
+    "projectId": {
+      "type": "integer"
+    },
+    "userId": {
+      "type": "integer"
+    }
+  },
+  "required": ["projectId", "userId"],
+  "additionalProperties": false
+}

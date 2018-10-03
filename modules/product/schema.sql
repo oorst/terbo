@@ -1,4 +1,5 @@
 CREATE TYPE product_t AS ENUM ('PRODUCT', 'SERVICE');
+CREATE TYPE rounding_rule_t AS ENUM ('NONE', 'NEAREST_INTEGER', 'ROUND_UP');
 
 CREATE SCHEMA prd
   CREATE TABLE uom (
@@ -26,6 +27,7 @@ CREATE SCHEMA prd
     data              jsonb,
     tracked           boolean DEFAULT FALSE,
     uom_id            integer REFERENCES uom (uom_id) ON DELETE SET NULL,
+    product_uom_id    integer REFERENCES product_uom (product_uom_id) ON DELETE RESTRICT,
     -- Weight in kilograms for every base unit of measure
     weight            numeric(10,3),
     created           timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -55,7 +57,10 @@ CREATE SCHEMA prd
     uom_id         integer REFERENCES uom (uom_id) ON DELETE CASCADE,
     divide         numeric(10,3),
     multiply       numeric(10,3),
-    created        timestamp DEFAULT CURRENT_TIMESTAMP
+    rounding_rule  rounding_rule_t DEFAULT 'NONE',
+    created        timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified       timestamp DEFAULT CURRENT_TIMESTAMP,
+    created_by     integer REFERENCES party (party_id)
   )
 
   CREATE TABLE product_tag (
@@ -72,29 +77,6 @@ CREATE SCHEMA prd
       USING (product_id)
     INNER JOIN tag t
       USING (tag_id)
-
-  -- Refs are an indirect way of referencing a product. They are similar to a
-  -- product code, but where a product code must be unique, refs can be
-  -- repeated on many products and a product can have many refs.
-  -- Refs are different to tags in that tags are meant specifically for
-  -- searching and categorization.
-  -- CREATE TABLE ref (
-  --   ref_id serial PRIMARY KEY,
-  --   name   text UNIQUE
-  -- )
-
-  -- CREATE TABLE product_ref (
-  --   ref_id     integer REFERENCES ref (ref_id) ON DELETE CASCADE,
-  --   product_id integer REFERENCES product (product_id) ON DELETE CASCADE
-  -- )
-
-  -- CREATE TABLE cost (
-  --   cost_id   serial PRIMARY KEY,
-  --   product_id integer REFERENCES product (product_id) ON DELETE CASCADE,
-  --   amount     numeric(10,2),
-  --   created    timestamp DEFAULT CURRENT_TIMESTAMP,
-  --   end_at     timestamp
-  -- )
 
   CREATE TABLE margin (
     margin_id serial PRIMARY KEY,
@@ -114,59 +96,21 @@ CREATE SCHEMA prd
   )
 
   CREATE TABLE price (
-    price_id   serial PRIMARY KEY,
-    product_id integer REFERENCES product (product_id) ON DELETE CASCADE,
-    cost       numeric(10,2),
-    gross      numeric(10,2),
-    net        numeric(10,2),
-    margin     numeric(4,3),
-    margin_id  integer REFERENCES margin (margin_id) ON DELETE SET NULL,
-    markup     numeric(10,2),
-    markup_id  integer REFERENCES markup (markup_id) ON DELETE SET NULL,
-    tax        boolean,
-    created    timestamp DEFAULT CURRENT_TIMESTAMP,
-    end_at      timestamp,
+    price_id         serial PRIMARY KEY,
+    product_id       integer REFERENCES product (product_id) ON DELETE CASCADE,
+    cost             numeric(10,2),
+    cost_rate_uom_id integer REFERENCES uom (uom_id) ON DELETE RESTRICT,
+    gross            numeric(10,2),
+    net              numeric(10,2),
+    margin           numeric(4,3),
+    margin_id        integer REFERENCES margin (margin_id) ON DELETE SET NULL,
+    markup           numeric(10,2),
+    markup_id        integer REFERENCES markup (markup_id) ON DELETE SET NULL,
+    tax              boolean,
+    created          timestamp DEFAULT CURRENT_TIMESTAMP,
+    end_at           timestamp,
     CONSTRAINT margin_value CHECK(margin > 0 AND margin < 1)
   )
-
-  -- Do not use this view for composite products.  Only get_product() will
-  -- reurn pricing for a composite
-  -- CREATE OR REPLACE VIEW product_pricing_v AS
-  --   SELECT
-  --     p.product_id,
-  --     cost.amount AS cost,
-  --     price.markup,
-  --     COALESCE(price.gross, cost.amount * (1 + price.markup / 100.00))::numeric(10,2) AS gross
-  --   FROM product p
-  --   LEFT JOIN (
-  --     SELECT DISTINCT ON (price.productId)
-  --       price.productId,
-  --       price.priceId,
-  --       price.gross,
-  --       price.net,
-  --       COALESCE(price.markup, markup.amount) AS markup
-  --     FROM price
-  --     LEFT JOIN markup
-  --       USING (markupId)
-  --     ORDER BY price.productId, price.priceId DESC
-  --   ) price
-  --     ON price.productId = p.product_id
-
-  -- CREATE OR REPLACE VIEW product_abbr_v AS
-  --   SELECT
-  --     p.product_id,
-  --     p.type,
-  --     COALESCE(p.code, fam.code) AS code,
-  --     COALESCE(p.sku, fam.sku) AS sku,
-  --     COALESCE(p.manufacturer_code, fam.manufacturer_code) AS manufacturer_code,
-  --     COALESCE(p.supplier_code, fam.supplier_code) AS supplier_code,
-  --     COALESCE(p.name, fam.name) AS name,
-  --     COALESCE(p.description, fam.description) AS description,
-  --     p.created,
-  --     p.modified
-  --   FROM prd.product p
-  --   LEFT JOIN prd.product fam
-  --     ON fam.product_id = p.family_id
 
   CREATE OR REPLACE VIEW product_list_v AS
     SELECT

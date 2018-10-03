@@ -6,7 +6,7 @@
       "type": "integer"
     },
     "quantity": {
-      "type": "number"
+      "type": ["number", "null"]
     },
     "gross": {
       "type": "number"

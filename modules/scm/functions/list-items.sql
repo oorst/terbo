@@ -11,14 +11,14 @@ BEGIN
       p.name AS "productName",
       p.code
     FROM scm.item i
-    INNER JOIN prd.product_list_v p
+    LEFT JOIN prd.product_list_v p
       USING (product_id)
     WHERE to_tsvector(
       concat_ws(' ',
         coalesce(i.name, p.name),
         p.code
       )
-    ) @@ plainto_tsquery($1->>'search')
+    ) @@ plainto_tsquery(($1->>'search') || ':*')
   ) r;
 END
 $$

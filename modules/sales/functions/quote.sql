@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION sales.quote (integer, OUT result json) AS
+CREATE OR REPLACE FUNCTION sales.quote (json, OUT result json) AS
 $$
 BEGIN
   WITH document AS (
@@ -19,7 +19,7 @@ BEGIN
     FROM sales.order o
     INNER JOIN sales.quote q
       USING (order_id)
-    WHERE q.quote_id = $1
+    WHERE q.quote_id = ($1->>'quoteId')::integer
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
@@ -52,17 +52,6 @@ BEGIN
     INNER JOIN person p
       ON p.party_id = document.created_by
   ) r;
-END
-$$
-LANGUAGE 'plpgsql';
-
-CREATE OR REPLACE FUNCTION sales.get_quote (json, OUT result json) AS
-$$
-BEGIN
-  SELECT
-    sales.get_quote(q.quote_id) INTO result
-  FROM sales.quote q
-  WHERE q.quote_id = ($1->>'quoteId')::integer;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

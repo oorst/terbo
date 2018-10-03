@@ -9,7 +9,7 @@ BEGIN
       email,
       NULL AS url
     FROM person
-    WHERE to_tsvector(concat_ws(' ', name, email)) @@ plainto_tsquery($1->>'search')
+    WHERE to_tsvector(concat_ws(' ', name, email)) @@ plainto_tsquery(($1->>'search') || ':*')
 
     UNION ALL
 
@@ -20,7 +20,7 @@ BEGIN
       NULL AS email,
       url
     FROM organisation
-    WHERE to_tsvector(concat_ws(' ', name, trading_name)) @@ plainto_tsquery($1->>'search')
+    WHERE to_tsvector(concat_ws(' ', name, trading_name)) @@ plainto_tsquery(($1->>'search') || ':*')
   )
   SELECT json_strip_nulls(json_agg(r)) INTO result
   FROM (

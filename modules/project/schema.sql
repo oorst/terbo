@@ -27,6 +27,12 @@ CREATE SCHEMA prj
     PRIMARY KEY (project_id)
   )
 
+  CREATE TABLE project_order (
+    project_id integer REFERENCES project (project_id),
+    order_id   integer REFERENCES sales.order (order_id),
+    PRIMARY KEY (project_id, order_id)
+  )
+
   CREATE TABLE project_role (
     project_id integer REFERENCES project (project_id),
     party_id   integer REFERENCES person (party_id)

@@ -1,0 +1,24 @@
+{
+  "title": "prd.update_product_uom(json)",
+  "description": "expected JSON payload for prd.update_product_uom(json)",
+  "type": "object",
+  "properties": {
+    "productUomId": {
+      "type": "integer"
+    },
+    "uomId": {
+      "type": "integer"
+    },
+    "multiply": {
+      "type": "number"
+    },
+    "divide": {
+      "type": "number"
+    },
+    "roundingRule": {
+      "enum": ["NONE", "NEAREST_INTEGER", "ROUND_UP"]
+    }
+  },
+  "required": ["productUomId"],
+  "additionalProperties": false
+}

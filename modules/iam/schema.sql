@@ -6,7 +6,6 @@ CREATE SCHEMA iam
     identity_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     hash          text,
     party_id      integer REFERENCES party (party_id) ON DELETE CASCADE,
-    oid           oid REFERENCES pg_roles (oid),
     created       timestamp DEFAULT CURRENT_TIMESTAMP,
     created_by    integer REFERENCES party (party_id) ON DELETE SET NULL
   )

@@ -17,10 +17,14 @@ BEGIN
     RETURNING job_id
   ), project AS (
     INSERT INTO prj.project (
-      job_id
+      name,
+      job_id,
+      created_by
     )
     SELECT
-      job.job_id
+      (SELECT created_by FROM payload),
+      job.job_id,
+      (SELECT created_by FROM payload)
     FROM job
     RETURNING *
   )

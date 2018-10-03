@@ -10,3 +10,4 @@
 \ir core-setting.sql
 \ir update-modified.sql
 \ir update-organisation.sql
+\ir update-person.sql

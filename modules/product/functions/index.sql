@@ -11,10 +11,13 @@
 \ir get-markups.sql
 \ir get-price.sql
 \ir get-uoms.sql
+\ir price.sql
+\ir product.sql
 \ir search.sql
 \ir current-cost.sql
 \ir flatten-product.sql
 \ir create-component.sql
 \ir update-component.sql
+\ir update-product-uom.sql
 \ir product-gross.sql
 \ir get-line-item.sql

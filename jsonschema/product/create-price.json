@@ -10,6 +10,9 @@
     "cost": {
       "type": "number"
     },
+    "costUomId": {
+      "type": "integer"
+    },
     "gross": {
       "type": "number"
     },

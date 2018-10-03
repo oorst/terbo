@@ -70,3 +70,5 @@ BEGIN
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;
+
+COMMENT ON FUNCTION sales.create_line_item(json) IS 'Terbo provided function.';
