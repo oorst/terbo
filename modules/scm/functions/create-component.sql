@@ -1,69 +1,71 @@
-CREATE OR REPLACE FUNCTION scm.create_component (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION scm.create_component (json, parent_uuid uuid DEFAULT NULL, OUT result json) AS
 $$
 DECLARE
-  payload RECORD;
+  _i record;
 BEGIN
-  SELECT * INTO payload
+  WITH payload AS (
+    SELECT
+      p."parentUuid" AS parent_uuid,
+      p."productId" AS product_id,
+      p."prototypeUuid" AS prototype_uuid,
+      p.name,
+      p.type,
+      p.components,
+      p."userId" AS created_by
+    FROM json_to_record($1) AS p (
+      "parentUuid"    uuid,
+      "productId"     integer,
+      "prototypeUuid" uuid,
+      name            text,
+      type            scm_item_t,
+      components      json,
+      "userId"        integer
+    )
+  ), new_item AS (
+    INSERT INTO scm.item (
+      type,
+      name,
+      product_id,
+      prototype_uuid
+    )
+    SELECT
+      CASE p.type
+        WHEN 'SUBASSEMBLY' THEN 'ITEM'
+        ELSE p.type
+      END,
+      p.name,
+      p.product_id,
+      p.prototype_uuid
+    FROM payload p
+    WHERE p.type IN ('PART', 'ITEM', 'SUBASSEMBLY')
+    RETURNING item_uuid
+  ), new_component AS (
+    INSERT INTO scm.component (
+      parent_uuid,
+      item_uuid,
+      product_id
+    )
+    SELECT
+      coalesce($2, p.parent_uuid),
+      (SELECT item_uuid FROM new_item),
+      p.product_id
+    FROM payload p
+    RETURNING *
+  )
+  SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      j."userId" AS user_id,
-      j."itemUuid" AS item_uuid,
-      j.type,
-      j."productId" AS product_id
-    FROM json_to_record($1) AS j (
-      "userId"    integer,
-      "itemUuid"  uuid,
-      type        scm_item_t,
-      "productId" integer
-    )
+      c.component_id AS "componentId",
+      c.item_uuid AS "itemUuid",
+      c.product_id AS "productId"
+    FROM new_component c
   ) r;
 
-  IF payload.type = 'PRODUCT' THEN
-    WITH parent AS (
-      SELECT
-        *
-      FROM scm.component c
-      WHERE c.item_uuid = payload.item_uuid
-    ), new_item AS (
-      INSERT INTO scm.item (
-        product_id,
-        type
-      )
-      SELECT
-        payload.product_id,
-        payload.type::scm_item_t
-      RETURNING *
-    ), component AS (
-      INSERT INTO scm.component (
-        root_uuid,
-        parent_uuid,
-        item_uuid
-      )
-      SELECT
-        coalesce((SELECT root_uuid FROM parent), payload.item_uuid),
-        payload.item_uuid,
-        new_item.item_uuid
-      FROM new_item
-      RETURNING *
-    )
-    SELECT json_strip_nulls(to_json(r)) INTO result
-    FROM (
-      SELECT
-        c.component_id AS "componentId",
-        c.root_uuid AS "rootUuid",
-        c.parent_uuid AS "parentUuid",
-        c.item_uuid AS "itemUuid",
-        coalesce(p.name, f.name) AS name,
-        coalesce(p.sku, p.code, p.supplier_code, p.manufacturer_code, f.code, f.supplier_code, f.manufacturer_code) AS code
-      FROM component c
-      INNER JOIN new_item i
-        USING (item_uuid)
-      INNER JOIN prd.product p
-        USING (product_id)
-      LEFT JOIN prd.product f
-        ON f.product_id = p.family_id
-    ) r;
-  END IF;
+  -- Create components from children
+  FOR _i IN SELECT * FROM json_array_elements($1->'components')
+  LOOP
+    PERFORM scm.create_component(_i.value, (result->>'itemUuid')::uuid);
+  END LOOP;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

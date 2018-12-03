@@ -1,0 +1,15 @@
+{
+  "title": "pcm.create_purhcase_order(json)",
+  "description": "expected JSON payload for pcm.create_purhcase_order(json)",
+  "type": "object",
+  "properties": {
+    "supplierId": {
+      "type": "integer"
+    },
+    "userId": {
+      "type": "integer"
+    }
+  },
+  "required": ["supplierId", "userId"],
+  "additionalProperties": false
+}

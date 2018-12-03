@@ -1,0 +1,7 @@
+CREATE OR REPLACE FUNCTION raise_notice (json) RETURNS VOID AS
+$$
+BEGIN
+  RAISE NOTICE '%', $1;
+END
+$$
+LANGUAGE 'plpgsql';

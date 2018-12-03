@@ -12,7 +12,8 @@ BEGIN
       li.quantity,
       li.product_id AS "productId",
       pv.name,
-      pv.code
+      pv.code,
+      pv.short_desc AS "shortDescription"
     FROM pcm.line_item li
     INNER JOIN purchase_order
       USING (purchase_order_id)
@@ -23,18 +24,19 @@ BEGIN
   FROM (
     SELECT
       po.purchase_order_id AS "purchaseOrderId",
+      po.purchase_order_num AS "purchaseOrderNumber",
       po.order_id AS "orderId",
-      po.issued_to AS "issuedToId",
+      po.supplier_id AS "supplierId",
       po.status,
       po.data,
       po.created,
       po.modified,
       (SELECT json_agg(li) FROM line_item li) AS "lineItems",
-      pvi.name AS "issuedToName",
+      pvs.name AS "supplierName",
       pvc.name AS "createdByName"
     FROM purchase_order po
-    LEFT JOIN party_v pvi
-      ON pvi.party_id = po.issued_to
+    LEFT JOIN party_v pvs
+      ON pvs.party_id = po.supplier_id
     LEFT JOIN party_v pvc
       ON pvc.party_id = po.created_by
   ) r;

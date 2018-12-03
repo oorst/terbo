@@ -12,14 +12,23 @@ BEGIN
   FROM (
     SELECT
       i.item_uuid AS "itemUuid",
+      i.prototype_uuid AS "prototypeUuid",
+      i.product_id AS "productId",
+      pti.name AS "prototypeName",
       i.name,
       i.description,
       i.attributes,
       i.gross,
-      i.created
-    FROM scm.item i
-    INNER JOIN payload
+      i.created,
+      pv.name AS "productName",
+      pv.code
+    FROM payload
+    INNER JOIN scm.item i
       USING (item_uuid)
+    LEFT JOIN prd.product_list_v pv
+      USING (product_id)
+    LEFT JOIN scm.item_list_v pti
+      ON pti.item_uuid = i.prototype_uuid
   ) r;
 END
 $$

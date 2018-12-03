@@ -1,0 +1,18 @@
+{
+  "title": "prj.update_deliverable(json)",
+  "description": "expected JSON payload for prj.update_deliverable(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer"
+    },
+    "deliverableId": {
+      "type": "integer"
+    },
+    "sequenceNumber": {
+      "type": ["integer", "null"]
+    }
+  },
+  "required": ["userId", "deliverableId"],
+  "additionalProperties": false
+}

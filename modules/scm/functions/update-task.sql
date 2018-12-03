@@ -1,51 +1,40 @@
+/*
+Create a dyamic query that only updates fileds that present on the payload
+*/
 CREATE OR REPLACE FUNCTION scm.update_task (json, OUT result json) AS
 $$
 BEGIN
-  -- Throw if no id is present
-  IF $1->>'id' IS NULL THEN
-    RAISE EXCEPTION 'no id provided';
-  END IF;
+  EXECUTE (
+    SELECT
+      format(
+        'UPDATE scm.task SET (%s) = (%s) WHERE task_id = ''%s''',
+        c.column,
+        c.value,
+        c.task_id
+      )
+    FROM (
+      SELECT
+        string_agg(q.column, ', ') AS column,
+        string_agg(q.value, ', ') AS value,
+        ($1->>'taskId')::integer AS task_id
+      FROM (
+        SELECT
+          p.key AS column,
+          CASE
+            -- check if it's a number
+            WHEN p.value ~ '^\d+(.\d+)?$' THEN
+              p.value
+            WHEN p.value IS NULL THEN
+              'NULL'
+            ELSE quote_literal(p.value)
+          END AS value
+        FROM json_each_text($1) p
+        WHERE p.key != 'taskId'
+      ) q
+    ) c
+  );
 
-  WITH existing AS (
-    SELECT *
-    FROM scm.task
-    WHERE task_id = ($1->>'id')::integer
-  )
-  UPDATE scm.task task
-  SET (
-    product_id,
-    name,
-    concurrency,
-    data,
-    modified
-  ) = (
-    CASE
-      WHEN $1->'productId' IS NULL THEN -- Note use of single bracket selector
-        x.product_id
-      ELSE ($1->>'productId')::integer
-    END,
-    CASE
-      WHEN $1->'name' IS NULL THEN
-        x.name
-      ELSE $1->>'name'
-    END,
-    CASE
-      WHEN $1->'concurrency' IS NULL THEN
-        x.concurrency
-      ELSE ($1->>'concurrency')::scm_task_concurrency_t
-    END,
-    CASE
-      WHEN $1->'data' IS NULL THEN
-        x.data
-      ELSE ($1->'data')::jsonb
-    END,
-    -- modified
-    CURRENT_TIMESTAMP
-  )
-  FROM existing x
-  WHERE task.task_id = x.task_id;
-
-  SELECT scm.get_task(($1->>'id')::integer) INTO result;
+  SELECT '{ "ok": true }'::json INTO result;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

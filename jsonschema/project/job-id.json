@@ -1,0 +1,11 @@
+{
+  "title": "jobId",
+  "description": "expected JSON payload for functions that require a jobId",
+  "type": "object",
+  "properties": {
+    "jobId": {
+      "type": "integer"
+    }
+  },
+  "required": ["jobId"]
+}

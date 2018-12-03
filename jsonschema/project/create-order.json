@@ -5,11 +5,8 @@
   "properties": {
     "projectId": {
       "type": "integer"
-    },
-    "userId": {
-      "type": "integer"
     }
   },
-  "required": ["projectId", "userId"],
+  "required": ["projectId"],
   "additionalProperties": false
 }

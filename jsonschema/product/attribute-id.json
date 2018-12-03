@@ -1,0 +1,11 @@
+{
+  "title": "attributeId",
+  "description": "expected JSON payload for functions that require an attributeId",
+  "type": "object",
+  "properties": {
+    "attributeId": {
+      "type": "integer"
+    }
+  },
+  "required": ["attributeId"]
+}

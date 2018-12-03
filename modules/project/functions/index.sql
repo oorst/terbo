@@ -1,4 +1,4 @@
-\ir create-order.sql
+\ir create-invoice.sql
 \ir create-project.sql
 \ir delete-project.sql
 \ir get-project.sql

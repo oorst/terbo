@@ -15,6 +15,9 @@
     },
     "quantity": {
       "type": "number"
+    },
+    "uomId": {
+      "type": ["number", "null"]
     }
   },
   "required": ["userId", "componentId"],

@@ -1,23 +1,16 @@
 CREATE OR REPLACE FUNCTION scm.list_tasks (json, OUT result json) AS
 $$
 BEGIN
-  WITH payload AS (
-    SELECT
-      j."routeId" AS route_id
-    FROM json_To_record($1) AS j (
-      "routeId" integer
-    )
-  )
   SELECT json_strip_nulls(json_agg(r)) INTO result
   FROM (
     SELECT
       t.task_id AS "taskId",
-      t.name
+      t.name,
+      p.name AS "productName"
     FROM scm.task t
-    INNER JOIN scm.route_task rt
-      USING (task_id)
-    INNER JOIN payload
-      USING (route_id)
+    INNER JOIN prd.product p
+      USING (product_id)
+    WHERE p.tsv @@ to_tsquery($1->>'search')
   ) r;
 END
 $$
@@ -29,13 +22,14 @@ BEGIN
   SELECT json_strip_nulls(json_agg(r)) INTO result
   FROM (
     SELECT
-      t.route_id AS "taskId",
-      coalesce(t.name, p.name) AS name,
+      t.task_id AS "taskId",
+      t.name,
+      p.name AS "productName",
       p.code
-    FROM scm.tasks t
+    FROM scm.task t
     INNER JOIN prd.product_list_v p
       USING (product_id)
-    ORDER BY p.name
+    ORDER BY t.name, p.name
   ) r;
 END
 $$

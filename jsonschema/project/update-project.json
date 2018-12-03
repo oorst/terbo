@@ -1,0 +1,18 @@
+{
+  "title": "prj.update_project(json)",
+  "description": "expected JSON payload for prj.update_project(json)",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer"
+    },
+    "projectId": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": ["userId", "projectId"],
+  "additionalProperties": false
+}

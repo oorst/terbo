@@ -1,0 +1,13 @@
+{
+  "title": "sales.confirm_order(json)",
+  "description": "expected payload for sales.confirm_order(json)",
+  "properties": {
+    "userId": {
+      "type": "integer"
+    },
+    "orderId": {
+      "type": "integer"
+    }
+  },
+  "required": ["userId", "orderId"]
+}

@@ -17,12 +17,6 @@ CREATE SCHEMA scm
     modified   timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
-  -- CREATE TABLE subRoute (
-  --   routeId  integer REFERENCES route (routeId) PRIMARY KEY,
-  --   parentId integer REFERENCES route (routeId),
-  --   seqNum   integer
-  -- )
-
   CREATE TABLE external_route (
     route_id  integer REFERENCES route (route_id) PRIMARY KEY,
     -- Party to which an Item is sent for processing
@@ -52,11 +46,22 @@ CREATE SCHEMA scm
     modified       timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
+  CREATE TABLE attribute (
+    attribute_id serial PRIMARY KEY,
+    item_uuid    uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
+    name         text,
+    value        text,
+    created      timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified     timestamp
+  )
+
   CREATE TABLE component (
     component_id   serial PRIMARY KEY,
     root_uuid      uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
     parent_uuid    uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
     item_uuid      uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
+    product_id     integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
+    uom_id         integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
     quantity       numeric(10,3),
     end_at         timestamp
   )
@@ -87,6 +92,13 @@ CREATE SCHEMA scm
     root_uuid     uuid REFERENCES item_instance (item_instance_uuid) ON DELETE CASCADE,
     parent_uuid   uuid REFERENCES item_instance (item_instance_uuid) ON DELETE CASCADE,
     quantity      numeric(10,3)
+  )
+
+  CREATE TABLE item_route (
+    item_uuid uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
+    route_id  integer REFERENCES route (route_id) ON DELETE CASCADE,
+    seq_num   integer,
+    PRIMARY KEY (item_uuid, route_id)
   )
 
   CREATE TABLE work_center (
@@ -126,6 +138,7 @@ CREATE SCHEMA scm
     task_id        serial PRIMARY KEY,
     product_id     integer REFERENCES prd.product (product_id) ON DELETE CASCADE,
     name           text,
+    description    text,
     concurrency    scm_task_concurrency_t DEFAULT 'SAME',
     data           jsonb,
     boq_id         integer REFERENCES boq (boq_id) ON DELETE SET NULL,
@@ -134,10 +147,10 @@ CREATE SCHEMA scm
   )
 
   CREATE TABLE route_task (
-    route_task_id serial PRIMARY KEY,
     route_id      integer REFERENCES route (route_id) ON DELETE CASCADE,
     task_id       integer REFERENCES task (task_id) ON DELETE CASCADE,
-    seq_num       integer
+    seq_num       integer,
+    PRIMARY KEY (route_id, task_id)
   )
 
   /**
@@ -159,22 +172,13 @@ CREATE SCHEMA scm
     status       smallint
   )
 
-  -- CREATE OR REPLACE VIEW itemView AS
-  --   SELECT
-  --     i.itemUuid,
-  --     i.type,
-  --     p.productId,
-  --     COALESCE(i.name, p.name, fam.name) AS _name,
-  --     p.code,
-  --     p.sku,
-  --     p.manufacturer_code,
-  --     p.supplier_code
-  --   FROM scm.item i
-  --   LEFT JOIN prd.product p
-  --     USING (productId)
-  --   LEFT JOIN prd.product fam
-  --     ON fam.productId = p.familyId
-  --   WHERE i.end_at IS NULL OR i.end_at > CURRENT_TIMESTAMP
+  CREATE TABLE delivery (
+    delivery_id     serial PRIMARY KEY,
+    address_id      integer REFERENCES full_address (address_id) ON DELETE SET NULL,
+    dispatch        timestamp,
+    actual_dispatch timestamp
+    created         timestamp DEFAULT CURRENT_TIMESTAMP
+  )
 
   CREATE OR REPLACE VIEW item_list_v AS
     SELECT

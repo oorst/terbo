@@ -1,0 +1,11 @@
+{
+  "title": "deliverableId",
+  "description": "expected JSON payload for functions that require a deliverableId",
+  "type": "object",
+  "properties": {
+    "deliverableId": {
+      "type": "integer"
+    }
+  },
+  "required": ["deliverableId"]
+}

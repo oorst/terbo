@@ -3,29 +3,9 @@ Replace the native Sales.line_item functions to include Items where a line
 item points to an Item
 */
 
-CREATE OR REPLACE FUNCTION sales.line_item(integer) RETURNS TABLE (
-  "lineItemId"     integer,
-  "orderId"        integer,
-  "productId"      integer,
-  "productCode"    text,
-  "productName"    text,
-  "itemUuid"       uuid,
-  "itemName"       text,
-  "linePosition"   smallint,
-  code             text,
-  name             text,
-  description      text,
-  data             jsonb,
-  discount         numeric(5,2),
-  "discountAmount" numeric(10,2),
-  gross            numeric(10,2),
-  "uomId"          integer,
-  quantity         numeric(10,3),
-  tax              boolean,
-  note             text,
-  created          timestamp,
-  "endAt"          timestamp
-) AS
+ALTER TYPE sales.line_item_t ADD ATTRIBUTE "itemUuid" uuid;
+
+CREATE OR REPLACE FUNCTION sales.line_item(integer) RETURNS SETOF sales.line_item_t AS
 $$
 BEGIN
   RETURN QUERY
@@ -63,24 +43,20 @@ END
 $$
 LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION sales.line_item (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION sales.line_item (json) RETURNS SETOF sales.line_item_t AS
 $$
 BEGIN
   IF $1->>'lineItemId' IS NOT NULL THEN
-    SELECT json_strip_nulls(to_json(r)) INTO result
-    FROM (
-      SELECT * FROM sales.line_item(($1->>'lineItemId')::integer)
-    ) r;
+    RETURN QUERY
+    SELECT * FROM sales.line_item(($1->>'lineItemId')::integer);
   ELSIF $1->>'orderId' IS NOT NULL THEN
-    SELECT json_strip_nulls(json_agg(r)) INTO result
-    FROM (
-      SELECT
-        lir.*
-      FROM sales.line_item li
-      INNER JOIN sales.line_item(li.line_item_id) lir
-        ON NOT (lir IS NULL)
-      WHERE li.order_id = ($1->>'orderId')::integer
-    ) r;
+    RETURN QUERY
+    SELECT
+      lir.*
+    FROM sales.line_item li
+    INNER JOIN sales.line_item(li.line_item_id) lir
+      ON NOT (lir IS NULL)
+    WHERE li.order_id = ($1->>'orderId')::integer;
   END IF;
 END
 $$

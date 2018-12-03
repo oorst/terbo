@@ -1,0 +1,15 @@
+{
+  "title": "prj.create_deliverable(json)",
+  "description": "expected JSON payload for prj.create_deliverable(json)",
+  "type": "object",
+  "properties": {
+    "jobId": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": ["jobId", "name"],
+  "additionalProperties": false
+}

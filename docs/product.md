@@ -4,6 +4,22 @@
 
 - Core
 
+## Prototypes
+
+The Terbo Product schema provides a prototyping interface, allowing a Product to
+inherit the data of an already existing Product. This can be very helpful when
+there are several Products that differ only slightly in their data.
+
+Where a Product provides its own data, that data will override the prototype.
+
+## Models
+
+### Product
+
+The Product model is designed to be as flexible as possible. Products
+
+
+
 ## API Functions
 
 ### prd.create_product(params json)

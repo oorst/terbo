@@ -7,14 +7,14 @@ CREATE SCHEMA iam
     hash          text,
     party_id      integer REFERENCES party (party_id) ON DELETE CASCADE,
     created       timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by    integer REFERENCES party (party_id) ON DELETE SET NULL
+    created_by    integer REFERENCES person (party_id) ON DELETE SET NULL
   )
 
   CREATE TABLE role (
     role_id    serial PRIMARY KEY,
     name       text,
     created    timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by integer REFERENCES party (party_id)
+    created_by integer REFERENCES person (party_id)
   )
 
   CREATE TABLE identity_role (
@@ -22,5 +22,5 @@ CREATE SCHEMA iam
     role_id       integer REFERENCES role (role_id) ON DELETE CASCADE,
     flags         integer DEFAULT 1,
     created       timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by    integer REFERENCES party (party_id) ON DELETE SET NULL
+    created_by    integer REFERENCES person (party_id) ON DELETE SET NULL
   );

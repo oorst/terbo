@@ -11,33 +11,27 @@ BEGIN
       name     text,
       "familyId" integer
     )
-  ), product_uom AS (
-    INSERT INTO prd.product_uom (
-      created_by
-    ) VALUES (
-      (
-        SELECT
-          party_id
-        FROM person
-        WHERE email = SESSION_USER
-      )
-    )
-
-    RETURNING product_uom_id
   ), product AS (
       INSERT INTO prd.product (
         type,
         name,
-        family_id,
-        product_uom_id
+        family_id
       )
       SELECT
         p.type,
         p.name,
-        p.family_id,
-        (SELECT product_uom_id FROM product_uom)
+        p.family_id
       FROM payload p
       RETURNING *
+    ), product_uom AS (
+      INSERT INTO prd.product_uom (
+        product_id,
+        primary_uom
+      )
+      SELECT
+        p.product_id,
+        TRUE
+      FROM product p
     )
     SELECT json_strip_nulls(to_json(r)) INTO result
     FROM (

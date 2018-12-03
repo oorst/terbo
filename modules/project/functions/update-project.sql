@@ -4,10 +4,6 @@ Create a dyamic query that only updates fileds that present on the payload
 CREATE OR REPLACE FUNCTION prj.update_project (json, OUT result json) AS
 $$
 BEGIN
-  IF $1->'projectId' IS NULL THEN
-    RAISE EXCEPTION 'projectId not provided';
-  END IF;
-
   EXECUTE (
     SELECT
       format('UPDATE prj.project SET (%s) = (%s) WHERE project_id = ''%s''', c.column, c.value, c.project_id)
@@ -19,10 +15,6 @@ BEGIN
       FROM (
         SELECT
           p.key AS column,
-          -- CASE p.key
-          --   WHEN 'productId' THEN 'product_id'
-          --   ELSE p.key
-          -- END AS column,
           CASE
             -- check if it's a number
             WHEN p.value ~ '^\d+(.\d+)?$' THEN
@@ -32,7 +24,7 @@ BEGIN
             ELSE quote_literal(p.value)
           END AS value
         FROM json_each_text($1) p
-        WHERE p.key != 'projectId'
+        WHERE p.key != 'projectId' AND p.key != 'userId'
       ) q
     ) c
   );

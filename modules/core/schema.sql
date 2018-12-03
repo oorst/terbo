@@ -28,7 +28,7 @@ CREATE TABLE full_address (
   code          text,
   country       text,
   type smallint, -- 0: residential, 1: business
-  created timestamp(0) DEFAULT LOCALTIMESTAMP
+  created timestamp(0) DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE party (
@@ -49,16 +49,16 @@ CREATE TABLE person (
 );
 
 CREATE TABLE organisation (
-  party_id          integer REFERENCES party (party_id) PRIMARY KEY,
-  name             text,
-  trading_name      text,
-  address_id        integer REFERENCES address (address_id) ON DELETE SET NULL,
+  party_id           integer REFERENCES party (party_id) PRIMARY KEY,
+  name               text,
+  trading_name       text,
+  address_id         integer REFERENCES address (address_id) ON DELETE SET NULL,
   billing_address_id integer REFERENCES address (address_id) ON DELETE SET NULL,
-  url              text,
-  industry_code     text,
-  data             jsonb,
-  created          timestamp DEFAULT CURRENT_TIMESTAMP,
-  modified         timestamp,
+  url                text,
+  industry_code      text,
+  data               jsonb,
+  created            timestamp DEFAULT CURRENT_TIMESTAMP,
+  modified           timestamp,
   CONSTRAINT valid_name CHECK(name IS NOT NULL OR trading_name IS NOT NULL)
 );
 

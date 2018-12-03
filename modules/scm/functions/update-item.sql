@@ -4,10 +4,6 @@ Create a dyamic query that only updates fileds that present on the payload
 CREATE OR REPLACE FUNCTION scm.update_item (json, OUT result json) AS
 $$
 BEGIN
-  IF $1->'itemUuid' IS NULL THEN
-    RAISE EXCEPTION 'itemUuid not provided';
-  END IF;
-
   EXECUTE (
     SELECT
       format('UPDATE scm.item SET (%s) = (%s) WHERE item_uuid = ''%s''', c.column, c.value, c.item_uuid)

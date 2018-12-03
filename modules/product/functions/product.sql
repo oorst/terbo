@@ -9,12 +9,12 @@ BEGIN
       pr.code,
       pr.sku,
       pr.name,
+      pr.short_desc AS "shortDescription",
       pr.description,
       pr.attributes,
       pr.url,
       -- Family
       fam.name AS "familyName",
-      coalesce(pr.name, fam.name) AS "$name",
       coalesce(pr.sku, pr.code, pr.supplier_code, pr.manufacturer_code) AS "$code",
       fam.code AS "familyCode",
       fam.manufacturer_code AS "familyManufacturerCode",
@@ -28,25 +28,7 @@ BEGIN
       pr.supplier_code AS "supplierCode",
       pr.data,
       -- Units
-      (
-        SELECT json_strip_nulls(json_agg(r))
-        FROM (
-          SELECT
-            p.product_uom_id AS "productUomId",
-            p.uom_id AS "uomId",
-            p.divide,
-            p.multiply,
-            p.rounding_rule AS "roundingRule",
-            u.name,
-            u.abbr,
-            u.type
-          FROM prd.product_uom p
-          INNER JOIN prd.uom u
-            USING (uom_id)
-          WHERE p.product_id = pr.product_id
-          ORDER BY p.product_uom_id
-        ) r
-      ) AS units,
+      prd.units(pr.product_id) AS units,
       -- Tags
       (
         SELECT json_agg(tag.name)

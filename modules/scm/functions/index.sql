@@ -1,4 +1,5 @@
 \echo 'Creating SCM functions'
+\ir add-task.sql
 \ir create-component.sql
 \ir create-item.sql
 \ir create-task.sql

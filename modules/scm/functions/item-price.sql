@@ -11,7 +11,7 @@ BEGIN
   WITH RECURSIVE component AS (
     SELECT
       c.item_uuid,
-      c.quantity,
+      coalesce(c.quantity, 1.000) AS quantity,
       i.type
     FROM scm.component c
     INNER JOIN scm.item i
@@ -22,7 +22,7 @@ BEGIN
 
     SELECT
       c.item_uuid,
-      (component.quantity * c.quantity)::numeric(10,3) AS quantity,
+      (component.quantity * coalesce(c.quantity, 1.000))::numeric(10,3) AS quantity,
       i.type
     FROM component
     INNER JOIN scm.component c

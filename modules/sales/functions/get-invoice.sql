@@ -27,16 +27,19 @@ BEGIN
       li.line_item_id AS "lineItemId",
       li.order_id AS "orderId",
       li.product_id AS "productId",
-      li.position,
-      coalesce(li.code, p._code) AS code,
-      coalesce(li.name, p._name) AS name,
-      coalesce(li.description, p._description) AS description,
+      li.line_position,
+      p.code,
+      p.name,
+      p.short_desc AS description,
       uom.name AS "uomName",
       uom.abbr AS "uomAbbr",
       li.data,
+      li.discount,
       li.quantity,
       coalesce(li.gross, price.gross) AS gross,
-      (coalesce(li.gross, price.gross) * coalesce(li.quantity, 1.000))::numeric(10,2) AS "lineTotal"
+      (coalesce(li.gross, price.gross)
+        * (100.00 - coalesce(li.discount, 0.00)) / 100.00
+        * coalesce(li.quantity, 1.000))::numeric(10,2) AS "lineTotal"
     FROM sales.line_item li
     INNER JOIN document
       USING (order_id)
@@ -49,7 +52,7 @@ BEGIN
     LEFT JOIN prd.uom uom
       ON uom.uom_id = pp.uom_id
     WHERE document.invoice_id = $1
-    ORDER BY position, line_item_id
+    ORDER BY line_position, line_item_id
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (

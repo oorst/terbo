@@ -32,7 +32,7 @@ BEGIN
       p.route_id,
       (SELECT task_id FROM new_task)
     FROM payload p
-    WHERE p.routeId IS NOT NULL
+    WHERE p.route_id IS NOT NULL
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (

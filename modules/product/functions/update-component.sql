@@ -1,10 +1,6 @@
 CREATE OR REPLACE FUNCTION prd.update_component (json, OUT result json) AS
 $$
 BEGIN
-  IF $1->'componentId' IS NULL THEN
-    RAISE EXCEPTION 'an id is required to update a component';
-  END IF;
-
   EXECUTE (
     SELECT
       format('UPDATE prd.component SET (%s) = (%s) WHERE component_id = ''%s''', c.column, c.value, c.component_id)
@@ -17,6 +13,7 @@ BEGIN
         SELECT
           CASE p.key
             WHEN 'productId' THEN 'product_id'
+            WHEN 'uomId' THEN 'uom_id'
             ELSE p.key
           END AS column,
           CASE
@@ -33,7 +30,7 @@ BEGIN
     ) c
   );
 
-  SELECT '{"ok": true}'::json INTO result;
+  SELECT '{ "ok": true }'::json INTO result;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

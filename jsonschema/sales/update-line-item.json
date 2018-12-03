@@ -8,6 +8,9 @@
     "quantity": {
       "type": ["number", "null"]
     },
+    "discount": {
+      "type": ["number", "null"]
+    },
     "gross": {
       "type": "number"
     }

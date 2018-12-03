@@ -1,0 +1,26 @@
+{
+  "title": "prd.update_attribute(json)",
+  "description": "expected JSON payload for prd.update_attribute(json)",
+  "type": "object",
+  "properties": {
+    "attributeId": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["name"]
+    },
+    {
+      "required": ["value"]
+    }
+  ],
+  "required": ["attributeId"],
+  "additionalProperties": false
+}

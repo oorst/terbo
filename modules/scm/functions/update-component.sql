@@ -14,7 +14,10 @@ BEGIN
         ($1->>'componentId')::integer AS component_id
       FROM (
         SELECT
-          p.key AS column,
+        CASE p.key
+          WHEN 'uomId' THEN 'uom_id'
+          ELSE p.key
+        END AS column,
           CASE
             -- check if it's a number
             WHEN p.value ~ '^\d+(.\d+)?$' THEN

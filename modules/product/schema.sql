@@ -1,6 +1,16 @@
 CREATE TYPE product_t AS ENUM ('PRODUCT', 'SERVICE');
 CREATE TYPE rounding_rule_t AS ENUM ('NONE', 'NEAREST_INTEGER', 'ROUND_UP');
 
+CREATE TYPE prd.product_uom_t AS (
+  "uomId"        integer,
+  name           text,
+  abbr           text,
+  type           text,
+  divide         numeric(10,3),
+  multiply       numeric(10,3),
+  "roundingRule" rounding_rule_t
+);
+
 CREATE SCHEMA prd
   CREATE TABLE uom (
     uom_id     serial PRIMARY KEY,
@@ -11,7 +21,8 @@ CREATE SCHEMA prd
 
   CREATE TABLE product (
     product_id        serial PRIMARY KEY,
-    family_id         integer REFERENCES product (product_id),
+    family_id         integer REFERENCES product (product_id) ON DELETE SET NULL,
+    prototype_id      integer REFERENCES product (product_id) ON DELETE CASCADE,
     type              product_t DEFAULT 'PRODUCT',
     name              text,
     short_desc        text,
@@ -24,6 +35,7 @@ CREATE SCHEMA prd
     supplier_id       integer REFERENCES party (party_id) ON DELETE SET NULL,
     supplier_code     text,
     attributes        jsonb,
+    tsv               tsvector,
     data              jsonb,
     tracked           boolean DEFAULT FALSE,
     uom_id            integer REFERENCES uom (uom_id) ON DELETE SET NULL,
@@ -35,6 +47,17 @@ CREATE SCHEMA prd
     modified          timestamp DEFAULT CURRENT_TIMESTAMP,
     -- A product must have it's own name or get one from it's family
     CONSTRAINT valid_name CHECK(family_id IS NOT NULL OR name IS NOT NULL)
+  )
+
+  CREATE TABLE product_attribute (
+    attribute_id serial PRIMARY KEY,
+    product_id   integer REFERENCES product (product_id) ON DELETE CASCADE,
+    name         text,
+    value        text,
+    created      timestamp DEFAULT CURRENT_TIMESTAMP,
+    created_by   integer REFERENCES party (party_id) ON DELETE SET NULL,
+    modified     timestamp,
+    UNIQUE (product_id, name)
   )
 
   CREATE TABLE gtin (
@@ -51,32 +74,10 @@ CREATE SCHEMA prd
     end_at       timestamp
   )
 
-  CREATE TABLE product_uom (
-    product_uom_id serial PRIMARY KEY,
-    product_id     integer REFERENCES product (product_id) ON DELETE CASCADE,
-    uom_id         integer REFERENCES uom (uom_id) ON DELETE CASCADE,
-    divide         numeric(10,3),
-    multiply       numeric(10,3),
-    rounding_rule  rounding_rule_t DEFAULT 'NONE',
-    created        timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified       timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by     integer REFERENCES party (party_id)
-  )
-
   CREATE TABLE product_tag (
     tag_id     integer REFERENCES tag (tag_id) ON DELETE CASCADE,
     product_id integer REFERENCES product (product_id) ON DELETE CASCADE
   )
-
-  CREATE VIEW product_tag_v AS
-    SELECT
-      p.product_id,
-      t.name
-    FROM product p
-    INNER JOIN product_tag
-      USING (product_id)
-    INNER JOIN tag t
-      USING (tag_id)
 
   CREATE TABLE margin (
     margin_id serial PRIMARY KEY,
@@ -112,6 +113,34 @@ CREATE SCHEMA prd
     CONSTRAINT margin_value CHECK(margin > 0 AND margin < 1)
   )
 
+  CREATE TABLE product_uom (
+    product_uom_id serial PRIMARY KEY,
+    product_id     integer REFERENCES product (product_id) ON DELETE CASCADE,
+    uom_id         integer REFERENCES uom (uom_id) ON DELETE CASCADE,
+    price_id       integer REFERENCES price (price_id) ON DELETE SET NULL,
+    divide         numeric(10,3),
+    multiply       numeric(10,3),
+    rounding_rule  rounding_rule_t DEFAULT 'NONE',
+    primary_uom    boolean,
+    created        timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified       timestamp DEFAULT CURRENT_TIMESTAMP,
+    created_by     integer REFERENCES party (party_id)
+  )
+
+  CREATE UNIQUE INDEX primary_uom
+  ON prd.product_id (product_id)
+  WHERE primary_uom IS TRUE;
+
+  CREATE VIEW product_tag_v AS
+    SELECT
+      p.product_id,
+      t.name
+    FROM product p
+    INNER JOIN product_tag
+      USING (product_id)
+    INNER JOIN tag t
+      USING (tag_id)
+
   CREATE OR REPLACE VIEW product_list_v AS
     SELECT
       p.product_id,
@@ -125,7 +154,7 @@ CREATE SCHEMA prd
     LEFT JOIN prd.product fam
       ON fam.product_id = p.family_id
 
-  -- Get the current price record for a product
+  -- Get the current price record for a product.  The price given is for one unit of the PRoduct's primary unit.
   CREATE OR REPLACE VIEW price_v AS
     WITH RECURSIVE product AS (
       -- Select products and recurse where a product has child components
@@ -213,16 +242,14 @@ CREATE SCHEMA prd
 -- Update modified column automatically and update parents
 CREATE OR REPLACE FUNCTION prd.product_update_tg () RETURNS TRIGGER AS
 $$
-DECLARE
-  now timestamp := CURRENT_TIMESTAMP;
 BEGIN
-  SELECT now INTO NEW.modified;
+  NEW.modified = CURRENT_TIMESTAMP;
 
   -- Update parent products
   UPDATE prd.product p SET (
     modified
   ) = (
-    now
+    CURRENT_TIMESTAMP
   )
   FROM prd.component c
   WHERE p.product_id = c.parent_id AND c.product_id = NEW.product_id;
@@ -275,3 +302,19 @@ LANGUAGE 'plpgsql';
 
 CREATE TRIGGER price_insert_tg AFTER INSERT ON prd.price
   FOR EACH ROW EXECUTE PROCEDURE prd.price_insert_tg();
+
+CREATE FUNCTION product_weighted_tsv_trigger() RETURNS trigger AS
+$$
+BEGIN
+  new.tsv :=
+     setweight(to_tsvector('simple', COALESCE(new.name,'')), 'A') ||
+     setweight(to_tsvector('simple', COALESCE(new.code,'')), 'A') ||
+     setweight(to_tsvector('simple', COALESCE(new.sku,'')), 'A') ||
+     setweight(to_tsvector('english', COALESCE(new.short_desc,'')), 'B');
+
+  RETURN new;
+END
+$$ LANGUAGE 'plpgsql';
+
+CREATE TRIGGER upd_product_tsvector BEFORE INSERT OR UPDATE ON prd.product
+FOR EACH ROW EXECUTE PROCEDURE product_weighted_tsv_trigger();

@@ -17,6 +17,7 @@ BEGIN
     SELECT
       p.product_id AS "productId",
       p.name,
+      p.short_desc AS "shortDescription",
       p.code,
       p.sku,
       p.manufacturer_code AS "manufacturerCode",

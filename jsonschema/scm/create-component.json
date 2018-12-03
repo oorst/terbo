@@ -7,17 +7,22 @@
       "type": "integer",
       "description": "id of the caller"
     },
-    "itemUuid": {
+    "parentUuid": {
       "description": "the item to which the component is being added",
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$"
+    },
+    "prototypeUuid": {
+      "description": "the prototype item of the new item that will be created",
       "type": "string",
       "pattern": "^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$"
     },
     "type": {
       "type": "string",
-      "enum": ["PRODUCT", "PART", "ITEM"]
+      "enum": ["PRODUCT", "PART", "SUBASSEMBLY", "ITEM"]
     },
     "name": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "productId": {
       "type": "integer"
@@ -35,8 +40,11 @@
     },
     {
       "required": ["familyId"]
+    },
+    {
+      "required": ["name"]
     }
   ],
-  "required": ["userId", "itemUuid", "type"],
+  "required": ["userId", "type"],
   "additionalProperties": false
 }

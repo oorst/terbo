@@ -5,11 +5,14 @@
     "partyId": {
       "type": "integer"
     },
+    "name": {
+      "type": ["string", "null"]
+    },
     "tradingName": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "abn": {
-      "type": "integer"
+      "type": ["string", "null"]
     }
   },
   "required": ["partyId"]

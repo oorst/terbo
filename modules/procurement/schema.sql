@@ -2,14 +2,16 @@ CREATE TYPE purchase_order_status_t AS ENUM ('DRAFT', 'RFQ', 'ISSUED', 'VOID');
 
 CREATE SCHEMA pcm
   CREATE TABLE purchase_order (
-    purchase_order_id serial PRIMARY KEY,
-    order_id          integer REFERENCES sales.order (order_id) ON DELETE SET NULL,
-    issued_to         integer REFERENCES party (party_id) ON DELETE SET NULL,
-    status            purchase_order_status_t DEFAULT 'DRAFT',
-    data              jsonb,
-    created_by        integer REFERENCES person (party_id) ON DELETE SET NULL,
-    created           timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified          timestamp DEFAULT CURRENT_TIMESTAMP
+    purchase_order_id  serial PRIMARY KEY,
+    purchase_order_num text,
+    order_id           integer REFERENCES sales.order (order_id) ON DELETE SET NULL,
+    supplier_id        integer REFERENCES party (party_id) ON DELETE SET NULL,
+    status             purchase_order_status_t DEFAULT 'DRAFT',
+    data               jsonb,
+    approved_by        integer REFERENCES person (party_id) ON DELETE SET NULL,
+    created_by         integer REFERENCES person (party_id) ON DELETE SET NULL,
+    created            timestamp DEFAULT CURRENT_TIMESTAMP,
+    modified           timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
   -- Partys who receive an RFQ

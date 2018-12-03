@@ -28,6 +28,7 @@ BEGIN
         SELECT
           CASE p.key
             WHEN 'familyId' THEN 'family_id'
+            WHEN 'shortDescription' THEN 'short_desc'
             WHEN 'manufacturerId' THEN 'manufacturer_id'
             WHEN 'supplierId' THEN 'supplier_id'
             WHEN 'manufacturerCode' THEN 'manufacturer_code'

@@ -6,7 +6,7 @@
 \ir create-uom.sql
 \ir delete-product.sql
 \ir update-product.sql
-\ir get-components.sql
+\ir components.sql
 \ir get-margins.sql
 \ir get-markups.sql
 \ir get-price.sql

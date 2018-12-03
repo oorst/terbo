@@ -1,5 +1,5 @@
 CREATE TYPE document_status_t AS ENUM ('DRAFT', 'ISSUED', 'DELETED', 'VOID');
-CREATE TYPE order_status_t AS ENUM ('PENDING', 'IN_PROGRESS', 'FULFILLED', 'DELIVERED');
+CREATE TYPE order_status_t AS ENUM ('PENDING', 'CONFIRMED', 'IN_PROGRESS', 'FULFILLED', 'DELIVERED');
 CREATE TYPE payment_status_t AS ENUM ('OWING', 'PAID');
 CREATE TYPE li_note_importance_t AS ENUM ('NORMAL', 'IMPORTANT');
 
@@ -22,11 +22,13 @@ CREATE SCHEMA sales
     invoice_id      serial PRIMARY KEY,
     invoice_num     text,
     order_id        integer REFERENCES sales.order (order_id) ON DELETE RESTRICT,
+    recipient_id    integer REFERENCES party (party_id) ON DELETE RESTRICT,
     contact_id      integer REFERENCES person (party_id) ON DELETE SET NULL,
     period          integer NOT NULL DEFAULT 30,
     due_date        timestamp,
     status          document_status_t DEFAULT 'DRAFT',
     payment_status  payment_status_t DEFAULT 'OWING',
+    short_desc      text,
     notes           text,
     data            jsonb,
     issued_at       timestamp,
@@ -113,7 +115,13 @@ CREATE SCHEMA sales
       ON pv.product_id = li.product_id
     LEFT JOIN prd.price_v pr
       ON pr.product_id = li.product_id
-    WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP;
+    WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP
+
+  CREATE OR REPLACE VIEW sales.overdue_invoice_v AS
+    SELECT
+      i.invoice_id
+    FROM sales.invoice i
+    WHERE i.due_date < CURRENT_TIMESTAMP AND i.payment_status != 'PAID';
 
 --
 -- Triggers

@@ -5,17 +5,18 @@ BEGIN
   FROM (
     SELECT
       po.purchase_order_id AS "purchaseOrderId",
+      po.purchase_order_num AS "purchaseOrderNumber",
       po.order_id AS "orderId",
-      po.issued_to AS "issuedToId",
+      po.supplier_id AS "supplierId",
       po.status,
       po.data,
       po.created_by AS "createdBy",
       po.created,
       po.modified,
-      pv.name
+      pv.name AS "supplierName"
     FROM pcm.purchase_order po
     LEFT JOIN party_v pv
-      ON pv.party_id = po.issued_to
+      ON pv.party_id = po.supplier_id
     WHERE po.purchase_order_id = ($1->>'purchaseOrderId')::integer
   ) r;
 END

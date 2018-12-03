@@ -11,7 +11,10 @@ BEGIN
         ($1->>'purchaseOrderId')::integer AS purchase_order_id
       FROM (
         SELECT
-          p.key AS column,
+          CASE p.key
+            WHEN 'purchaseOrderNumber' THEN 'purchase_order_num'
+            ELSE p.key
+          END AS column,
           CASE
             -- check if it's a number
             WHEN p.value ~ '^\d+(.\d+)?$' THEN

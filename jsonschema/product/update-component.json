@@ -1,0 +1,18 @@
+{
+  "title": "prd.update_component",
+  "description": "expected payload for prd.update_component(JSON)",
+  "type": "object",
+  "properties": {
+    "componentId": {
+      "type": "integer"
+    },
+    "quantity": {
+      "type": ["number", "null"]
+    },
+    "uomId": {
+      "type": ["integer", "null"]
+    }
+  },
+  "additionalProperties": false,
+  "required": ["componentId"]
+}

@@ -1,0 +1,18 @@
+{
+  "title": "prd.create_attribute(json)",
+  "description": "expected JSON payload for prd.create_attribute(json)",
+  "type": "object",
+  "properties": {
+    "productId": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "required": ["productId", "name", "value"],
+  "additionalProperties": false
+}

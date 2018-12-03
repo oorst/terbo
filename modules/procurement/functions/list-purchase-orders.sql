@@ -10,7 +10,7 @@ BEGIN
       p.name
     FROM pcm.purchase_order po
     LEFT JOIN party_v p
-      ON p.party_id = po.issued_to
+      ON p.party_id = po.supplier_id
     ORDER BY po.created DESC
     LIMIT 20
   ) r;
@@ -30,7 +30,7 @@ BEGIN
       p.name
     FROM pcm.purchase_order po
     INNER JOIN party_v p
-      ON p.party_id = po.issued_to
+      ON p.party_id = po.supplier_id
     WHERE
       ($1->>'orderId' IS NOT NULL AND po.order_id = ($1->>'orderId')::integer)
   ) r;

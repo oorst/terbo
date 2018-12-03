@@ -8,7 +8,11 @@
     },
     "status": {
       "type": "string"
-    }
+    },
+    "purchaseOrderNumber": {
+      "type": ["string", "null"]
+    },
   },
-  "required": ["purchaseOrderId"]
+  "required": ["purchaseOrderId"],
+  "additionalProperties": false
 }

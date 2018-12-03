@@ -1,11 +1,16 @@
+CREATE TYPE job_status_t AS ENUM ('WIP', 'COMPLETE');
+
 CREATE SCHEMA prj
   CREATE TABLE job (
     job_id          serial PRIMARY KEY,
     prototype_id    integer REFERENCES job (job_id) ON DELETE RESTRICT,
     dependant_id    integer REFERENCES job (job_id) ON DELETE CASCADE,
+    status          job_status_t,
     name            text,
     short_desc      text,
-    description      text,
+    description     text,
+    seq_num         integer,
+    duration        interval,
     lag             interval,
     lead            interval,
     created_by      integer REFERENCES person (party_id) ON DELETE SET NULL,
@@ -25,6 +30,12 @@ CREATE SCHEMA prj
     project_id integer REFERENCES project (project_id),
     job_id     integer REFERENCES job (job_id),
     PRIMARY KEY (project_id)
+  )
+
+  CREATE TABLE job_invoice (
+    job_id     integer REFERENCES job (job_id) ON DELETE RESTRICT,
+    invoice_id integer REFERENCES sales.invoice (invoice_id) ON DELETE RESTRICT,
+    PRIMARY KEY (job_id, invoice_id)
   )
 
   CREATE TABLE project_order (
@@ -51,11 +62,17 @@ CREATE SCHEMA prj
 
   CREATE TABLE deliverable (
     deliverable_id serial PRIMARY KEY,
-    project_id     integer REFERENCES project (project_id) ON DELETE CASCADE,
-    name           text,
-    dependency     integer REFERENCES deliverable (deliverable_id),
+    job_id         integer REFERENCES prj.job (job_id) ON DELETE CASCADE,
+    item_uuid      uuid REFERENCES scm.item (item_uuid) ON DELETE RESTRICT,
+    seq_num        integer,
     lag            interval,
     lead           interval,
     data           jsonb,
     created        timestamp DEFAULT CURRENT_TIMESTAMP
   );
+
+  -- CREATE TABLE deliverable_item (
+  --   deliverable_id integer REFERENCES deliverable (deliverable_id) ON DELETE CASCADE,
+  --   item_uuid      uuid REFERENCES scm.item (item_uuid) ON DELETE RESTRICT,
+  --   PRIMARY KEY (deliverable_id, item_uuid)
+  -- );

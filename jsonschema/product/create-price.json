@@ -8,19 +8,19 @@
       "description": "product_id of the product"
     },
     "cost": {
-      "type": "number"
+      "type": ["number", "null"]
     },
     "costUomId": {
       "type": "integer"
     },
     "gross": {
-      "type": "number"
+      "type": ["number", "null"]
     },
     "marginId": {
-      "type": "integer"
+      "type": ["integer", "null"]
     },
     "margin": {
-      "type": "number",
+      "type": ["number", "null"],
       "exclusiveMinimum": 0,
       "exclusiveMaximum": 1
     },
@@ -28,7 +28,7 @@
       "type": ["integer", "null"]
     },
     "markup": {
-      "type": "number",
+      "type": ["number", "null"],
       "exclusiveMinimum": 0
     },
     "tax": {
