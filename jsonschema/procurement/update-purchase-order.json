@@ -11,7 +11,7 @@
     },
     "purchaseOrderNumber": {
       "type": ["string", "null"]
-    },
+    }
   },
   "required": ["purchaseOrderId"],
   "additionalProperties": false
