@@ -13,12 +13,16 @@ BEGIN
       li.product_id AS "productId",
       pv.name,
       pv.code,
-      pv.short_desc AS "shortDescription"
+      pv.short_desc AS "shortDescription",
+      uom.name AS "uomName",
+      uom.abbr AS "uomAbbr"
     FROM pcm.line_item li
     INNER JOIN purchase_order
       USING (purchase_order_id)
     INNER JOIN prd.product_list_v pv
       USING (product_id)
+    LEFT JOIN prd.uom uom
+      USING (uom_id)
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
@@ -27,6 +31,7 @@ BEGIN
       po.purchase_order_num AS "purchaseOrderNumber",
       po.order_id AS "orderId",
       po.supplier_id AS "supplierId",
+      po.notes,
       po.status,
       po.data,
       po.created,

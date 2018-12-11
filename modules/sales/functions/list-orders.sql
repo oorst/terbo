@@ -9,6 +9,7 @@ BEGIN
         o.status,
         o.nickname,
         o.short_desc AS "shortDescription",
+        o.buyer_id AS "buyerId",
         buyer.name AS "buyerName"
       FROM sales.order o
       LEFT JOIN party_v buyer

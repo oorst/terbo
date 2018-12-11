@@ -38,7 +38,7 @@ BEGIN
       p.prototype_uuid
     FROM payload p
     WHERE p.type IN ('PART', 'ITEM', 'SUBASSEMBLY')
-    RETURNING item_uuid
+    RETURNING *
   ), new_component AS (
     INSERT INTO scm.component (
       parent_uuid,
@@ -57,8 +57,11 @@ BEGIN
     SELECT
       c.component_id AS "componentId",
       c.item_uuid AS "itemUuid",
-      c.product_id AS "productId"
+      c.product_id AS "productId",
+      i.name
     FROM new_component c
+    LEFT JOIN new_item i
+      ON i.item_uuid = c.item_uuid
   ) r;
 
   -- Create components from children

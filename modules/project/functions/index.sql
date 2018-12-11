@@ -8,5 +8,6 @@
 \ir get-boqs.sql
 \ir get-jobs.sql
 \ir get-jobs-level.sql
+\ir refresh-job-task.sql
 \ir replace-boq.sql
 \ir update-project.sql

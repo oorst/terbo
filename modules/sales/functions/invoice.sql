@@ -7,6 +7,7 @@ BEGIN
       i.recipient_id,
       i.short_desc,
       i.status,
+      i.payment_status,
       i.data,
       i.issued_at,
       i.due_date,
@@ -21,14 +22,20 @@ BEGIN
   FROM (
     SELECT
       invoice.invoice_id AS "invoiceId",
+      invoice.recipient_id AS "recipientId",
       rec.name AS "recipientName",
       rec.type AS "recipientType",
       invoice.status,
       invoice.short_desc AS "shortDescription",
-      invoice.data,
+      invoice.data->'lineItems' AS "lineItems",
       invoice.created::date AS "createdDate",
       invoice.issued_at::date AS "issueDate",
       invoice.due_date AS "dueDate",
+      NULLIF(
+        (invoice.due_date < CURRENT_TIMESTAMP) AND invoice.payment_status = 'OWING',
+        FALSE
+      ) AS overdue,
+      invoice.payment_status AS "paymentStatus",
       invoice.period,
       invoice.notes,
       p.name AS "createdByName",

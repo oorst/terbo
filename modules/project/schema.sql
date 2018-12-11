@@ -3,6 +3,7 @@ CREATE TYPE job_status_t AS ENUM ('WIP', 'COMPLETE');
 CREATE SCHEMA prj
   CREATE TABLE job (
     job_id          serial PRIMARY KEY,
+    job_uuid        uuid DEFAULT uuid_generate_v4(),
     prototype_id    integer REFERENCES job (job_id) ON DELETE RESTRICT,
     dependant_id    integer REFERENCES job (job_id) ON DELETE CASCADE,
     status          job_status_t,

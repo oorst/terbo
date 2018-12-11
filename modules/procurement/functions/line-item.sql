@@ -9,7 +9,8 @@ BEGIN
       li.product_id AS "productId",
       li.quantity,
       pv.name AS "productName",
-      pv.code AS "productCode"
+      pv.code AS "productCode",
+      pv.short_desc AS "shortDescription"
     FROM pcm.line_item li
     INNER JOIN prd.product_list_v pv
       USING (product_id)

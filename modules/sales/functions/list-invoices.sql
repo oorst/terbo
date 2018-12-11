@@ -1,3 +1,26 @@
+CREATE OR REPLACE FUNCTION sales.list_invoices (OUT result json) AS
+$$
+BEGIN
+  SELECT json_strip_nulls(json_agg(r)) INTO result
+  FROM (
+    SELECT
+      i.invoice_id AS "invoiceId",
+      recipient.name AS "recipientName",
+      NULLIF(
+        (
+          (i.payment_status = 'OWING') AND (i.due_date < CURRENT_TIMESTAMP)
+        ),
+        FALSE
+      ) AS overdue
+    FROM sales.invoice i
+    LEFT JOIN party_v recipient
+      ON recipient.party_id = i.recipient_id
+    LIMIT 20
+  ) r;
+END
+$$
+LANGUAGE 'plpgsql' SECURITY DEFINER;
+
 CREATE OR REPLACE FUNCTION sales.list_invoices (json, OUT result json) AS
 $$
 BEGIN

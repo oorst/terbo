@@ -58,11 +58,12 @@ CREATE SCHEMA scm
   CREATE TABLE component (
     component_id   serial PRIMARY KEY,
     root_uuid      uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
-    parent_uuid    uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
-    item_uuid      uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
+    parent_uuid    uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
+    item_uuid      uuid REFERENCES item (item_uuid) ON DELETE RESTRICT,
     product_id     integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
     uom_id         integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
     quantity       numeric(10,3),
+    type           scm_item_t,
     end_at         timestamp
   )
 
@@ -136,14 +137,28 @@ CREATE SCHEMA scm
 
   CREATE TABLE task (
     task_id        serial PRIMARY KEY,
-    product_id     integer REFERENCES prd.product (product_id) ON DELETE CASCADE,
+    product_id     integer REFERENCES prd.product (product_id) ON DELETE SET NULL,
     name           text,
     description    text,
-    concurrency    scm_task_concurrency_t DEFAULT 'SAME',
     data           jsonb,
     boq_id         integer REFERENCES boq (boq_id) ON DELETE SET NULL,
     work_center_id integer REFERENCES work_center (work_center_id) ON DELETE SET NULL,
+    finished_at    timestamp,
+    created        timestamp DEFAULT CURRENT_TIMESTAMP,
     modified       timestamp DEFAULT current_timestamp
+  )
+
+  CREATE TABLE task_item (
+    task_id        integer REFERENCES task (task_id) ON DELETE RESTRICT,
+    item_uuid      uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
+    batch_uuid     uuid,
+    batch_priority integer,
+    -- Sorting number is an arbitrary number for sorting tasks within a batch
+    -- or other grouping
+    sorting_num    integer,
+    finished_at    timestamp,
+    queue_number   serial,
+    PRIMARY KEY (task_id, item_uuid)
   )
 
   CREATE TABLE route_task (
@@ -180,23 +195,45 @@ CREATE SCHEMA scm
     created         timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
+  CREATE OR REPLACE VIEW task_queue_v AS
+    SELECT
+      ti.task_id,
+      ti.item_uuid,
+      ti.queue_number,
+      ti.finished_at,
+      ti.batch_uuid,
+      ti.batch_priority,
+      ti.sorting_num,
+      t.work_center_id,
+      r.route_id,
+      rt.seq_num
+    FROM task_item ti
+    INNER JOIN task t
+      USING (task_id)
+    INNER JOIN item i
+      USING (item_uuid)
+    INNER JOIN route r
+      ON r.product_id = i.product_id
+    INNER JOIN route_task rt
+      ON rt.route_id = r.route_id AND rt.task_id = ti.task_id
+
   CREATE OR REPLACE VIEW item_list_v AS
     SELECT
       i.item_uuid,
-      i.type,
-      p.product_id,
-      p.type AS product_type,
-      p.sku,
-      COALESCE(p.sku, p.code, p.supplier_code, p.manufacturer_code, fam.code) AS code,
-      COALESCE(i.name, p.name, fam.name) AS name,
-      COALESCE(i.short_desc, p.short_desc, fam.short_desc) AS short_desc,
+      i.prototype_uuid,
+      coalesce(i.product_id, proto.product_id) AS product_id,
+      p.code,
+      COALESCE(i.name, proto.name, p.name) AS name,
+      COALESCE(i.short_desc, proto.short_desc, p.short_desc) AS short_desc,
       i.created,
       i.modified
-    FROM scm.item i
-    LEFT JOIN prd.product p
+    FROM item i
+    LEFT JOIN prd.product_list_v p
       USING (product_id)
-    LEFT JOIN prd.product fam
-      ON fam.product_id = p.family_id
+    LEFT JOIN item proto
+      ON proto.item_uuid = i.prototype_uuid
+    LEFT JOIN prd.product_list_v pp
+      ON pp.product_id = proto.product_id
     WHERE i.end_at IS NULL OR i.end_at > CURRENT_TIMESTAMP;
 
 -- Replace the native sales.line_item_v to include Items
@@ -229,3 +266,9 @@ CREATE OR REPLACE VIEW sales.line_item_v AS
   LEFT JOIN scm.price(sli.item_uuid) ip
     ON ip IS NOT NULL
   WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP;
+
+  --
+  -- Triggers
+  --
+CREATE TRIGGER scm_delete_component_tg AFTER DELETE ON scm.component
+  FOR EACH ROW EXECUTE PROCEDURE scm.delete_component_tg();
