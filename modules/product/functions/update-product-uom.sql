@@ -1,13 +1,18 @@
 CREATE OR REPLACE FUNCTION prd.update_product_uom (json, OUT result json) AS
 $$
 BEGIN
-  IF $1->'productUomId' IS NULL THEN
-    RAISE EXCEPTION 'an id is required to update a component';
-  END IF;
-
   EXECUTE (
     SELECT
-      format('UPDATE prd.product_uom SET (%s) = (%s) WHERE product_uom_id = ''%s''', c.column, c.value, c.product_uom_id)
+      format(
+        CASE
+          WHEN c.column IS NOT NULL THEN
+           'UPDATE prd.product_uom SET (%s) = (%s) WHERE product_uom_id = ''%s'''
+          ELSE ''
+        END,
+        c.column,
+        c.value,
+        c.product_uom_id
+      )
     FROM (
       SELECT
         string_agg(q.column, ', ') AS column,
@@ -30,12 +35,28 @@ BEGIN
             ELSE quote_literal(p.value)
           END AS value
         FROM json_each_text($1) p
-        WHERE p.key != 'productUomId' -- Don't include the id
+        -- Don't include the id
+        -- Also don't include any properties that are specific to pricing as
+        -- they will form part of a new price record that is inserted later
+        WHERE p.key NOT IN (
+          'productUomId',
+          'cost',
+          'gross',
+          'margin',
+          'marginId',
+          'markup',
+          'markupId',
+          'taxExcluded'
+        )
       ) q
     ) c
   );
 
-  SELECT '{ "ok": true }'::json INTO result;
+  -- A pricing history must be kept, so new pricing data simply creates a new
+  -- price record
+  PERFORM prd.create_price($1);
+
+  SELECT format('{ "ok": true, "productUomId": %s }', ($1->>'productUomId'))::json INTO result;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

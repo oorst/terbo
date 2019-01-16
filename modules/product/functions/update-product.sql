@@ -33,7 +33,7 @@ BEGIN
             WHEN 'supplierId' THEN 'supplier_id'
             WHEN 'manufacturerCode' THEN 'manufacturer_code'
             WHEN 'supplierCode' THEN 'supplier_code'
-            WHEN 'uomId' THEN 'uom_id'
+            WHEN 'primaryUomId' THEN 'primary_uom_id'
             ELSE p.key
           END AS column,
           CASE

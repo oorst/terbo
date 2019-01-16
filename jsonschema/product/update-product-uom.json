@@ -10,13 +10,34 @@
       "type": "integer"
     },
     "multiply": {
-      "type": "number"
+      "type": ["number", "null"]
     },
     "divide": {
-      "type": "number"
+      "type": ["number", "null"]
     },
     "roundingRule": {
       "enum": ["NONE", "NEAREST_INTEGER", "ROUND_UP"]
+    },
+    "weight": {
+      "type": ["number", "null"]
+    },
+    "cost": {
+      "type": ["number", "null"]
+    },
+    "gross": {
+      "type": ["number", "null"]
+    },
+    "margin": {
+      "type": ["number", "null"]
+    },
+    "marginId": {
+      "type": ["integer", "null"]
+    },
+    "markup": {
+      "type": ["number", "null"]
+    },
+    "markupId": {
+      "type": ["integer", "null"]
     }
   },
   "required": ["productUomId"],

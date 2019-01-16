@@ -1,12 +1,17 @@
 CREATE TYPE job_status_t AS ENUM ('WIP', 'COMPLETE');
 
 CREATE SCHEMA prj
+  CREATE TABLE state (
+    state_id serial PRIMARY KEY,
+    name     text
+  )
+
   CREATE TABLE job (
     job_id          serial PRIMARY KEY,
-    job_uuid        uuid DEFAULT uuid_generate_v4(),
+    job_uuid        uuid,
     prototype_id    integer REFERENCES job (job_id) ON DELETE RESTRICT,
     dependant_id    integer REFERENCES job (job_id) ON DELETE CASCADE,
-    status          job_status_t,
+    status          integer REFERENCES state (state_id) ON DELETE RESTRICT,
     name            text,
     short_desc      text,
     description     text,
@@ -25,6 +30,11 @@ CREATE SCHEMA prj
     address_id  integer REFERENCES full_address (address_id) ON DELETE SET NULL,
     owner_id    integer REFERENCES party (party_id) ON DELETE SET NULL,
     nickname    text
+  )
+
+  CREATE TABLE project_state (
+    project_id integer REFERENCES project (project_id) ON DELETE CASCADE,
+    state_id   integer REFERENCES state (state_id) ON DELETE RESTRICT
   )
 
   CREATE TABLE project_job (
@@ -72,8 +82,11 @@ CREATE SCHEMA prj
     created        timestamp DEFAULT CURRENT_TIMESTAMP
   );
 
-  -- CREATE TABLE deliverable_item (
-  --   deliverable_id integer REFERENCES deliverable (deliverable_id) ON DELETE CASCADE,
-  --   item_uuid      uuid REFERENCES scm.item (item_uuid) ON DELETE RESTRICT,
-  --   PRIMARY KEY (deliverable_id, item_uuid)
-  -- );
+-- Create default states
+INSERT INTO prj.state (
+  name
+) VALUES (
+  'unstarted',
+  'inprogress',
+  'finished'
+);

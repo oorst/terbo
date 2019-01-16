@@ -12,10 +12,12 @@ BEGIN
   ), quote AS (
     INSERT INTO sales.quote (
       order_id,
+      data,
       created_by
     )
     SELECT
       order_id,
+      (SELECT jsonb_strip_nulls(jsonb_agg(r)) FROM sales.line_items(($1->>'orderId')::integer) r),
       created_by
     FROM payload
     RETURNING *

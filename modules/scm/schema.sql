@@ -168,25 +168,6 @@ CREATE SCHEMA scm
     PRIMARY KEY (route_id, task_id)
   )
 
-  /**
-  Task instances are used for items that are parametric in nature.
-
-  ### Triggers
-  - task_instance_tg: On insert, a new boq is also inserted with
-  task_instance.boqId = boq.boqId
-  */
-  CREATE TABLE task_instance (
-    task_inst_id serial PRIMARY KEY,
-    task_id      integer REFERENCES task (task_id) ON DELETE RESTRICT,
-    item_uuid    uuid REFERENCES item (item_uuid) ON DELETE CASCADE,
-    quantity     numeric(10,2),
-    bom_id       integer REFERENCES bom (bom_id) ON DELETE RESTRICT,
-    boq_id       integer REFERENCES boq (boq_id) ON DELETE RESTRICT, -- TODO this should probably be removed
-    duration     interval,
-    data         jsonb,
-    status       smallint
-  )
-
   CREATE TABLE delivery (
     delivery_id     serial PRIMARY KEY,
     address_id      integer REFERENCES full_address (address_id) ON DELETE SET NULL,
@@ -235,37 +216,6 @@ CREATE SCHEMA scm
     LEFT JOIN prd.product_list_v pp
       ON pp.product_id = proto.product_id
     WHERE i.end_at IS NULL OR i.end_at > CURRENT_TIMESTAMP;
-
--- Replace the native sales.line_item_v to include Items
-CREATE OR REPLACE VIEW sales.line_item_v AS
-  SELECT
-    li.line_item_id,
-    li.order_id,
-    li.product_id,
-    sli.item_uuid,
-    li.line_position,
-    li.quantity,
-    coalesce(pv.name, iv.name) AS name,
-    coalesce(pv.short_desc, iv.short_desc) AS short_desc,
-    coalesce(pv.code, iv.code) AS code,
-    coalesce(i.gross, ip.gross, pp.gross) AS gross,
-    coalesce(ip.cost, pp.cost) AS cost,
-    (coalesce(ip.gross, pp.gross) * li.quantity)::numeric(10,2) AS line_total,
-    li.data
-  FROM sales.line_item li
-  LEFT JOIN prd.product_list_v pv
-    ON pv.product_id = li.product_id
-  LEFT JOIN prd.price_v pp
-    ON pp.product_id = li.product_id
-  LEFT JOIN scm.line_item sli
-    USING (line_item_id)
-  LEFT JOIN scm.item_list_v iv
-    ON iv.item_uuid = sli.item_uuid
-  LEFT JOIN scm.item i
-    ON i.item_uuid = sli.item_uuid
-  LEFT JOIN scm.price(sli.item_uuid) ip
-    ON ip IS NOT NULL
-  WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP;
 
   --
   -- Triggers

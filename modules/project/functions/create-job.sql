@@ -3,21 +3,25 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      j."userId" AS created_by,
-      j."jobId" AS job_id,
-      j.name
-    FROM json_to_record($1) AS j (
+      p."userId" AS created_by,
+      p."jobId" AS job_id,
+      p.name,
+      p."jobUuid" AS job_uuid
+    FROM json_to_record($1) AS p (
       "userId"    integer,
       "jobId"     integer,
-      name        text
+      name        text,
+      "jobUuid"   uuid
     )
   ), job AS (
     INSERT INTO prj.job (
+      job_uuid,
       dependant_id,
       name,
       created_by
     )
     SELECT
+      coalesce(p.job_uuid, uuid_generate_v4()),
       p.job_id,
       p.name,
       p.created_by

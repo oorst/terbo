@@ -5,8 +5,14 @@
   "properties": {
     "projectId": {
       "type": "integer"
+    },
+    "buyerId": {
+      "type": "integer"
+    },
+    "userId": {
+      "type": "integer"
     }
   },
-  "required": ["projectId"],
+  "required": ["projectId", "buyerId", "userId"],
   "additionalProperties": false
 }

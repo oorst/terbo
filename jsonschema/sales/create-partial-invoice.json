@@ -1,0 +1,30 @@
+{
+  "title": "sales.create_partial_invoice(json)",
+  "description": "expected payload for sales.create_partial_invoice(json)",
+  "properties": {
+    "userId": {
+      "type": "integer",
+      "description": "userId of the caller"
+    },
+    "invoiceId": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "shortDescription": {
+      "type": ["string", "null"]
+    },
+    "grossLineTotal": {
+      "type": "number"
+    },
+    "netLineTotal": {
+      "type": "number"
+    }
+  },
+  "oneOf": [
+    { "required": ["grossLineTotal"] },
+    { "required": ["netLineTotal"] }
+  ],
+  "required": ["userId", "invoiceId", "name"]
+}

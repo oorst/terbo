@@ -1,3 +1,40 @@
+CREATE OR REPLACE FUNCTION prj.boq (
+  _job_id    integer,
+  _recursive boolean DEFAULT FALSE -- Recurse into all sub jobs
+) RETURNS TABLE (
+  product_id integer,
+  uom_id     integer,
+  quantity   numeric(10,3)
+) AS
+$$
+BEGIN
+  RETURN QUERY
+  SELECT
+    b.product_id,
+    b.uom_id,
+    sum(b.quantity) AS quantity
+  FROM (
+    SELECT
+      j.job_id
+    FROM prj.job j
+    WHERE j.job_id = _job_id
+
+    UNION
+
+    SELECT
+      j.job_id
+    FROM prj.flatten_job(_job_id) j
+    WHERE _recursive IS TRUE
+  ) job
+  INNER JOIN prj.deliverable d
+    USING (job_id)
+  LEFT JOIN scm.boq(d.item_uuid) b
+    ON b.item_uuid = d.item_uuid
+  GROUP BY b.product_id, b.uom_id;
+END
+$$
+LANGUAGE 'plpgsql';
+
 CREATE OR REPLACE FUNCTION prj.boq (json, OUT result json) AS
 $$
 BEGIN

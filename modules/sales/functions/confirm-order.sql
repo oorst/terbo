@@ -3,25 +3,26 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-     "orderId" AS order_id,
-     "userId" AS user_id
-    FROM json_to_record($1) AS j (
+      p."orderId" AS order_id,
+      p."buyerId" AS recipient_id,
+      p."userId" AS user_id
+    FROM json_to_record($1) AS p (
       "orderId" integer,
+      "buyerId" integer,
       "userId"  integer
     )
   ), invoice AS (
     INSERT INTO sales.invoice (
       order_id,
+      recipient_id,
       created_by,
       data
     )
     SELECT
       p.order_id,
+      p.recipient_id,
       p.user_id,
-      jsonb_build_object(
-        'lineItems',
-        (SELECT jsonb_agg(r) FROM sales.line_item(p.order_id) r)
-      )
+      sales.create_document(p.order_id)
     FROM payload p
     RETURNING *
   ), updated_order AS (

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION prd.units (integer, OUT result json) AS
+CREATE OR REPLACE FUNCTION prd.uoms (integer, OUT result json) AS
 $$
 BEGIN
   SELECT
@@ -12,9 +12,12 @@ BEGIN
       pu.weight,
       pu.rounding_rule AS "roundingRule",
       puv.is_primary AS "isPrimary",
-      puv.gross,
-      puv.cost,
-      puv.price,
+      puv.gross AS "uomGross",
+      puv.price AS "uomPrice",
+      ((puv.gross - coalesce(pr.cost, 0::numeric(10,2))) / puv.gross)::numeric(4,3) AS "uomMargin",
+      pr.cost,
+      pr.gross,
+      pr.price,
       pr.margin_id AS "marginId",
       pr.markup,
       pr.markup_id AS "markupId",

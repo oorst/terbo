@@ -28,7 +28,7 @@ BEGIN
       pr.supplier_code AS "supplierCode",
       pr.data,
       -- Units
-      prd.units(pr.product_id) AS units,
+      prd.uoms(pr.product_id) AS units,
       -- Tags
       (
         SELECT json_agg(tag.name)
@@ -37,11 +37,6 @@ BEGIN
           USING (tag_id)
         WHERE pt.product_id = pr.product_id
       ) AS tags,
-      -- Pricing
-      price.gross,
-      price.cost,
-      price.profit,
-      price.margin,
       NOT (component IS NULL) AS "isComposite",
       pr.created,
       pr.modified
@@ -66,8 +61,6 @@ BEGIN
       FROM party_v
     ) sup
       ON sup.id = pr.supplier_id
-    LEFT JOIN prd.price_v price
-      ON price.product_id = pr.product_id
     LEFT JOIN prd.component component
       ON component.parent_id = pr.product_id
     WHERE pr.product_id = $1

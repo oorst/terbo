@@ -12,8 +12,6 @@ $$
 BEGIN
   RETURN QUERY
   WITH RECURSIVE item AS (
-    -- Select from components where the parent is the root item or where the
-    -- parent is the root item's prototype
     SELECT
       i.item_uuid,
       NULL::uuid AS parent_uuid,

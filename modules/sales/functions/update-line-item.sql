@@ -11,7 +11,12 @@ BEGIN
         ($1->>'lineItemId')::integer AS line_item_id
       FROM (
         SELECT
-          p.key AS column,
+          CASE p.key
+            WHEN 'grossLineTotal' THEN 'gross_line_total'
+            WHEN 'netLineTotal' THEN 'net_line_total'
+            WHEN 'shortDescription' THEN 'short_desc'
+            ELSE p.key
+          END AS column,
           CASE
             -- check if it's a number
             WHEN p.value ~ '^\d+(.\d+)?$' THEN

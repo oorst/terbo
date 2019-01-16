@@ -3,20 +3,24 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      j."projectId" AS project_id,
-      j."userId" AS created_by
-    FROM json_to_record($1) AS j (
+      p."projectId" AS project_id,
+      p."buyerId" AS buyer_id,
+      p."userId" AS created_by
+    FROM json_to_record($1) AS p (
       "projectId" integer,
+      "buyerId"   integer,
       "userId"    integer
     )
   ), sales_order AS (
     INSERT INTO sales.order (
+      buyer_id,
       created_by
     )
     SELECT
+      p.buyer_id,
       p.created_by
     FROM payload p
-    RETURNING order_id
+    RETURNING *
   ), project_order AS (
     INSERT INTO prj.project_order (
       project_id,

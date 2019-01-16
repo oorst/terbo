@@ -23,16 +23,16 @@ $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION prd.computed_price (integer) RETURNS TABLE (
-  product_id integer,
-  gross      numeric(10,2),
-  profit     numeric(10,2),
-  margin     numeric(4,3)
+  product_uom_id integer,
+  gross          numeric(10,2),
+  profit         numeric(10,2),
+  margin         numeric(4,3)
 ) AS
 $$
 BEGIN
   RETURN QUERY
   WITH RECURSIVE product AS (
-    -- First select the product in question
+    -- First select the product_uom in question
     SELECT
       p.product_id,
       1.000 AS quantity,

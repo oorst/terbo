@@ -13,6 +13,15 @@
     },
     "gross": {
       "type": "number"
+    },
+    "netLineTotal": {
+      "type": ["number", "null"]
+    },
+    "grossLineTotal": {
+      "type": ["number", "null"]
+    },
+    "shortDescription": {
+      "type": ["string", "null"]
     }
   },
   "required": ["lineItemId"],

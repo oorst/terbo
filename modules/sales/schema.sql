@@ -44,6 +44,13 @@ CREATE SCHEMA sales
     created    timestamp DEFAULT CURRENT_TIMESTAMP
   )
 
+  -- Partial Invoice links invoices where a partial payment or deposit is made
+  CREATE TABLE partial_invoice (
+    parent_id  integer REFERENCES invoice (invoice_id) ON DELETE CASCADE,
+    invoice_id integer REFERENCES invoice (invoice_id) ON DELETE RESTRICT,
+    PRIMARY KEY (parent_id, invoice_id)
+  )
+
   CREATE TABLE quote (
     quote_id    serial PRIMARY KEY,
     order_id    integer REFERENCES sales.order (order_id) ON DELETE CASCADE,
@@ -63,8 +70,10 @@ CREATE SCHEMA sales
   CREATE TABLE payment (
     payment_id serial PRIMARY KEY,
     invoice_id integer REFERENCES invoice (invoice_id),
+    ref_num    text,
+    paid_at    timestamptz DEFAULT CURRENT_TIMESTAMP,
     amount     numeric(10,2),
-    created    timestamp DEFAULT CURRENT_TIMESTAMP
+    created    timestamptz DEFAULT CURRENT_TIMESTAMP
   )
 
   CREATE TABLE line_item (
@@ -75,14 +84,17 @@ CREATE SCHEMA sales
     line_position       smallint,
     code                text,
     name                text,
-    description         text,
-    data               jsonb,
+    short_desc          text,
+    data                jsonb,
     -- Percentage discount
-    discount            numeric(5,2),
+    line_discount       numeric(5,2),
     -- Dollar amount discount
-    discount_amount      numeric(10,2),
+    line_discount_amount numeric(10,2),
     -- Gross price charged
     gross               numeric(10,2),
+    price               numeric(10,2),
+    total_gross         numeric(10,2),
+    total_price         numeric(10,2),
     uom_id              integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
     quantity            numeric(10,3),
     tax                 boolean DEFAULT TRUE,
@@ -94,28 +106,36 @@ CREATE SCHEMA sales
     end_at              timestamp
   )
 
-  CREATE OR REPLACE VIEW line_item_v AS
+  CREATE OR REPLACE VIEW sales.line_item_v AS
     SELECT
       li.line_item_id,
       li.product_id,
       li.quantity,
+      li.line_position,
+      coalesce(li.name, p.name) AS name,
+      p.code,
+      p.sku,
+      p.supplier_code,
+      p.manufacturer_code,
+      pu.gross,
+      pu.weight,
       uom.name AS uom_name,
       uom.abbr AS uom_abbr,
-      pv.code,
-      pv.name,
-      pr.gross,
-      (li.quantity * pr.gross)::numeric(10,2) AS line_total,
-      (li.quantity * pr.gross * 0.1)::numeric(10,2) AS line_tax
-    FROM line_item li
+      CASE
+        WHEN li.line_total_gross IS NOT NULL THEN
+          li.line_total_gross
+        WHEN li.line_gross IS NOT NULL THEN
+          (li.line_gross * li.quantity)::numeric(10,2)
+        ELSE (pu.gross * li.quantity)::numeric(10,2)
+      END AS total_gross
+    FROM sales.line_item li
     LEFT JOIN prd.product p
       USING (product_id)
+    LEFT JOIN prd.product_uom(li.product_id, li.uom_id) pu
+      ON pu.product_id = li.product_id AND pu.uom_id = li.uom_id
     LEFT JOIN prd.uom uom
-      ON uom.uom_id = p.uom_id
-    LEFT JOIN prd.product_list_v pv
-      ON pv.product_id = li.product_id
-    LEFT JOIN prd.price_v pr
-      ON pr.product_id = li.product_id
-    WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP
+      ON uom.uom_id = li.uom_id
+    WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP;
 
   CREATE OR REPLACE VIEW sales.overdue_invoice_v AS
     SELECT

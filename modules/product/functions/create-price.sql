@@ -1,23 +1,22 @@
 /**
 
 */
-CREATE OR REPLACE FUNCTION prd.create_price (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION prd.create_price (json) RETURNS VOID AS
 $$
 BEGIN
   WITH payload AS (
     SELECT
-      j."productId" AS product_id,
-      j.cost,
-      j."costUomId" AS cost_uom_id,
-      j.gross,
-      j.net,
-      j.margin,
-      j."marginId" AS margin_id,
-      j.markup,
-      j."markupId" AS markup_id,
-      j.tax
-    FROM json_to_record($1) AS j (
-      "productId"     integer,
+      p."productUomId" AS product_uom_id,
+      p.cost,
+      p.gross,
+      p.net,
+      p.margin,
+      p."marginId" AS margin_id,
+      p.markup,
+      p."markupId" AS markup_id,
+      p."taxExcluded" AS tax_excluded
+    FROM json_to_record($1) AS p (
+      "productUomId"  integer,
       cost            numeric(10,2),
       "costUomId"     integer,
       gross           numeric(10,2),
@@ -26,55 +25,57 @@ BEGIN
       "marginId"      integer,
       markup          numeric(10,2),
       "markupId"      integer,
-      tax             boolean
+      "taxExcluded"   boolean
     )
-  ), price AS (
-    INSERT INTO prd.price (
-      product_id,
-      cost,
-      cost_uom_id,
-      margin,
-      margin_id,
-      markup,
-      markup_id,
-      tax
-    )
-    SELECT
-      p.product_id,
-      coalesce(p.cost, pr.cost),
-      coalesce(p.cost_uom_id, pr.cost_uom_id),
-      coalesce(p.margin, pr.margin),
-      coalesce(p.margin_id, pr.margin_id),
-      coalesce(p.markup, pr.markup),
-      coalesce(p.markup_id, pr.markup_id),
-      coalesce(p.tax, pr.tax)
-    FROM payload p
-    LEFT JOIN LATERAL (
-      SELECT
-        *
-      FROM prd.price price
-      WHERE price.product_id = p.product_id
-    ) AS pr
-      USING (product_id)
-
-    RETURNING *
+    WHERE p."productUomId" IS NOT NULL
   )
-  SELECT json_strip_nulls(to_json(r)) INTO result
-  FROM (
-    SELECT
-      price_id AS "priceId",
-      product_id AS "productId",
-      cost,
-      cost_uom_id AS "costUomId",
-      gross,
-      net,
-      margin,
-      margin_id AS "marginId",
-      markup,
-      markup_id AS "markupId",
-      tax
-    FROM price
-  ) r;
+  INSERT INTO prd.price (
+    product_uom_id,
+    cost,
+    gross,
+    margin,
+    margin_id,
+    markup,
+    markup_id,
+    tax_excluded
+  )
+  SELECT DISTINCT ON (pr.product_uom_id)
+    p.product_uom_id,
+    CASE
+      WHEN $1->'cost' IS NOT NULL AND p.cost IS NULL THEN -- an actual 'null' is present in the json payload
+        NULL
+      ELSE coalesce(p.cost, pr.cost)
+    END,
+    CASE
+      WHEN json_typeof($1->'gross') = 'null' THEN -- an actual 'null' is present in the json payload
+        NULL
+      ELSE coalesce(p.gross, pr.gross)
+    END,
+    CASE
+      WHEN $1->'margin' IS NOT NULL AND p.margin IS NULL THEN -- an actual 'null' is present in the json payload
+        NULL
+      ELSE coalesce(p.margin, pr.margin)
+    END,
+    CASE
+      WHEN $1->'marginId' IS NOT NULL AND p.margin_id IS NULL THEN -- an actual 'null' is present in the json payload
+        NULL
+      ELSE coalesce(p.margin_id, pr.margin_id)
+    END,
+    CASE
+      WHEN $1->'markup' IS NOT NULL AND p.markup IS NULL THEN -- an actual 'null' is present in the json payload
+        NULL
+      ELSE coalesce(p.markup, pr.markup)
+    END,
+    CASE
+      WHEN $1->'markupId' IS NOT NULL AND p.markup_id IS NULL THEN -- an actual 'null' is present in the json payload
+        NULL
+      ELSE coalesce(p.markup_id, pr.markup_id)
+    END,
+    coalesce(p.tax_excluded, pr.tax_excluded)
+  FROM payload p
+  LEFT JOIN prd.price pr
+    USING (product_uom_id)
+  ORDER BY pr.product_uom_id, pr.price_id DESC;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

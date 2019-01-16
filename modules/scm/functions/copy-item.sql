@@ -8,23 +8,19 @@ DECLARE
 BEGIN
   -- Create the new item
   INSERT INTO scm.item (
-    prototype_uuid,
     product_id,
     name,
     type,
     data,
-    attributes,
     gross,
     net,
     weight
   )
   SELECT
-    coalesce(i.prototype_uuid, $1),
     i.product_id,
     i.name,
     i.type,
     i.data,
-    i.attributes,
     i.gross,
     i.net,
     i.weight

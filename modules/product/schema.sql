@@ -1,4 +1,4 @@
-CREATE TYPE product_t AS ENUM ('PRODUCT', 'SERVICE');
+CREATE TYPE product_t AS ENUM ('PRODUCT', 'SERVICE', 'FAMILY', 'CATEGORY');
 CREATE TYPE rounding_rule_t AS ENUM ('NONE', 'NEAREST_INTEGER', 'ROUND_UP');
 
 CREATE TYPE prd.product_uom_t AS (
@@ -34,14 +34,11 @@ CREATE SCHEMA prd
     manufacturer_code text,
     supplier_id       integer REFERENCES party (party_id) ON DELETE SET NULL,
     supplier_code     text,
-    attributes        jsonb,
+    -- Text search vector
     tsv               tsvector,
     data              jsonb,
-    tracked           boolean DEFAULT FALSE,
-    uom_id            integer REFERENCES uom (uom_id) ON DELETE SET NULL,
-    product_uom_id    integer REFERENCES product_uom (product_uom_id) ON DELETE RESTRICT,
-    -- Weight in kilograms for every base unit of measure
-    weight            numeric(10,3),
+    -- The product_uom referenced here is the primary uom of the product
+    primary_uom_id    integer REFERENCES product_uom (product_uom_id) ON DELETE RESTRICT,
     created           timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at            timestamp,
     modified          timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -67,10 +64,11 @@ CREATE SCHEMA prd
 
   CREATE TABLE component (
     component_id serial PRIMARY KEY,
-    product_id   integer REFERENCES product (product_id) ON DELETE CASCADE,
     parent_id    integer REFERENCES product (product_id) ON DELETE CASCADE,
-    quantity    numeric(10,3) DEFAULT 1,
-    created     timestamp DEFAULT CURRENT_TIMESTAMP,
+    product_id   integer REFERENCES product (product_id) ON DELETE CASCADE,
+    uom_id       integer REFERENCES uom (uom_id) ON DELETE RESTRICT,
+    quantity     numeric(10,3) DEFAULT 1,
+    created      timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at       timestamp
   )
 
@@ -99,15 +97,15 @@ CREATE SCHEMA prd
   CREATE TABLE price (
     price_id         serial PRIMARY KEY,
     product_id       integer REFERENCES product (product_id) ON DELETE CASCADE,
+    product_uom_id   integer REFERENCES product_uom (product_uom_id) ON DELETE CASCADE,
     cost             numeric(10,2),
-    cost_rate_uom_id integer REFERENCES uom (uom_id) ON DELETE RESTRICT,
     gross            numeric(10,2),
-    net              numeric(10,2),
+    price            numeric(10,2),
     margin           numeric(4,3),
     margin_id        integer REFERENCES margin (margin_id) ON DELETE SET NULL,
     markup           numeric(10,2),
     markup_id        integer REFERENCES markup (markup_id) ON DELETE SET NULL,
-    tax              boolean,
+    tax_excluded     boolean,
     created          timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at           timestamp,
     CONSTRAINT margin_value CHECK(margin > 0 AND margin < 1)
@@ -117,19 +115,15 @@ CREATE SCHEMA prd
     product_uom_id serial PRIMARY KEY,
     product_id     integer REFERENCES product (product_id) ON DELETE CASCADE,
     uom_id         integer REFERENCES uom (uom_id) ON DELETE CASCADE,
-    price_id       integer REFERENCES price (price_id) ON DELETE SET NULL,
+    weight         numeric(8,3),
     divide         numeric(10,3),
     multiply       numeric(10,3),
     rounding_rule  rounding_rule_t DEFAULT 'NONE',
-    primary_uom    boolean,
     created        timestamp DEFAULT CURRENT_TIMESTAMP,
     modified       timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by     integer REFERENCES party (party_id)
+    created_by     integer REFERENCES party (party_id),
+    UNIQUE (product_id, uom_id)
   )
-
-  CREATE UNIQUE INDEX primary_uom
-  ON prd.product_id (product_id)
-  WHERE primary_uom IS TRUE;
 
   CREATE VIEW product_tag_v AS
     SELECT
@@ -154,86 +148,114 @@ CREATE SCHEMA prd
     LEFT JOIN prd.product fam
       ON fam.product_id = p.family_id
 
-  -- Get the current price record for a product.  The price given is for one unit of the PRoduct's primary unit.
-  CREATE OR REPLACE VIEW price_v AS
-    WITH RECURSIVE product AS (
-      -- Select products and recurse where a product has child components
-      SELECT DISTINCT ON (p.product_id)
-        p.product_id AS root_id,
-        p.product_id,
-        1.000 AS quantity,
-        NULL::integer AS parent_id,
-        c.parent_id = p.product_id AS is_composite
-      FROM prd.product p
-      LEFT JOIN prd.component c
-        ON c.parent_id = p.product_id
-
-      UNION ALL
-
-      SELECT
-        p.root_id,
-        c.product_id,
-        (p.quantity * c.quantity)::numeric(10,3) AS quantity, -- Adjust quantities
-        c.parent_id,
-        cc.parent_id = c.product_id AS is_composite
-      FROM product p
-      INNER JOIN prd.component c
-        ON c.parent_id = p.product_id
-      LEFT JOIN prd.component cc
-        ON cc.parent_id = c.product_id
-      WHERE p.is_composite IS TRUE
-    ),
-    -- Get the current price and compute the markup
-    current_price AS (
-      SELECT DISTINCT ON (price.product_id)
-        price.product_id,
-        coalesce(
-          price.margin,
-          mg.amount,
-          coalesce(price.markup, mk.amount) / (1 + coalesce(price.markup, mk.amount))
-        ) AS margin,
-        coalesce(
-          coalesce(price.margin, mg.amount) / (1 - coalesce(price.margin, mg.amount)), -- Calculated markup has priority over set markup
-          price.markup,
-          mk.amount,
-          0.00 -- Markup should not be NULL
-        ) AS markup,
-        price.cost,
-        price.gross
-      FROM prd.price price
-      LEFT JOIN prd.margin mg
-        USING (margin_id)
-      LEFT JOIN prd.markup mk
-        USING (markup_id)
-      ORDER BY price.product_id, price.price_id DESC
-    ),
-    -- Compute the gross price
-    computed_price AS (
-      SELECT
-        root_id,
-        coalesce(
-          price.gross,
-          price.cost + (price.cost * price.markup)
-        ) * product.quantity AS gross,
-        price.cost * product.quantity AS cost
-      FROM product
-      INNER JOIN current_price price
-        USING (product_id)
-    ), sum AS (
-      SELECT
-        root_id AS product_id,
-        sum(price.gross)::numeric(10,2) AS gross,
-        sum(price.cost)::numeric(10,2) AS cost
-      FROM computed_price price
-      GROUP BY root_id
-    )
+  -- This view will only return correct results for non composite products.
+  -- Use prd.product_uom() to get results for all products
+  CREATE OR REPLACE VIEW prd.product_uom_v AS
     SELECT
-      product_id,
-      gross,
-      cost,
-      gross - cost AS profit,
-      ((gross - cost) / gross)::numeric(4,3) AS margin
-    FROM sum;
+      uom.product_uom_id,
+      uom.uom_id,
+      uom.product_id,
+      CASE
+        WHEN modifier.is_primary IS TRUE OR uom.weight IS NOT NULL THEN
+            uom.weight
+        ELSE (prm.weight * modifier.value)
+      END AS weight,
+      uom.rounding_rule,
+      p.primary_uom_id = uom.product_uom_id AS is_primary,
+      price.price_id,
+      CASE
+        WHEN modifier.is_primary IS TRUE THEN
+            price.cost
+        ELSE (price.cost * modifier.value)::numeric(10,2)
+      END AS cost,
+      CASE
+        WHEN modifier.is_primary IS TRUE THEN
+            price.gross
+        ELSE (price.gross * modifier.value)::numeric(10,2)
+      END AS gross,
+      CASE
+        WHEN modifier.is_primary IS TRUE THEN
+            n.price
+        ELSE (n.price * modifier.value)::numeric(10,2)
+      END AS price,
+      t.tax_amount,
+      u.name,
+      u.abbr,
+      u.type
+    FROM prd.product p
+    LEFT JOIN prd.product_uom prm -- Primary uom
+      ON prm.product_uom_id = p.primary_uom_id
+    LEFT JOIN prd.product_uom uom
+      ON uom.product_id = p.product_id
+    LEFT JOIN prd.uom u
+      ON u.uom_id = uom.uom_id
+    LEFT JOIN LATERAL (
+      SELECT
+        uom.product_uom_id,
+        uom.product_uom_id = prm.product_uom_id AS is_primary,
+        (coalesce(uom.multiply, 1.000) / coalesce(uom.divide, 1.000))::numeric AS value
+    ) modifier ON modifier.product_uom_id = uom.product_uom_id
+    -- Price data and gross price
+    LEFT JOIN LATERAL (
+      SELECT DISTINCT ON (pr.product_uom_id)
+        pr.product_uom_id,
+        pr.price_id,
+        pr.cost,
+        CASE
+          WHEN pr.price IS NOT NULL THEN
+            (pr.price * 0.90909)::numeric(10,2) -- TODO get rid of this constant
+          WHEN pr.gross IS NOT NULL THEN
+            pr.gross
+          WHEN pr.margin IS NOT NULL THEN
+            (pr.cost / (1 - pr.margin))::numeric(10,2)
+          WHEN mg.amount IS NOT NULL THEN
+            (pr.cost / (1 - mg.amount))::numeric(10,2)
+          WHEN pr.markup IS NOT NULL THEN
+            (pr.cost * (1 + pr.markup))::numeric(10,2)
+          WHEN mk.amount IS NOT NULL THEN
+            (pr.cost * (1 + mk.amount))::numeric(10,2)
+          ELSE NULL
+        END AS gross,
+        pr.price
+      FROM prd.price pr
+      LEFT JOIN prd.margin mg
+        ON mg.margin_id = pr.margin_id
+      LEFT JOIN prd.markup mk
+        ON mk.markup_id = pr.markup_id
+      WHERE pr.product_uom_id = uom.product_uom_id
+        AND (
+          pr.cost IS NOT NULL OR pr.gross IS NOT NULL OR pr.net IS NOT NULL
+        )
+      ORDER BY pr.product_uom_id, pr.price_id DESC
+    ) price ON price.product_uom_id = uom.product_uom_id
+    -- Net Price
+    LEFT JOIN LATERAL (
+      SELECT
+        price.product_uom_id,
+        CASE
+          WHEN price.price IS NOT NULL THEN
+            price.price
+          ELSE (price.gross * 1.1)::numeric(10,2)
+        END AS price
+    ) n ON n.product_uom_id = uom.product_uom_id
+    -- Tax
+    LEFT JOIN LATERAL (
+      SELECT
+        price.product_uom_id,
+        (n.price - price.gross)::numeric(10,2) AS tax_amount
+    ) t ON t.product_uom_id = uom.product_uom_id
+
+  -- For viewing a product as a line item
+  CREATE OR REPLACE VIEW line_item_v AS
+    SELECT
+      -- Where fields are null determine values by using divide or multiply with
+      -- the primary_uom's values
+      coalesce(uom.weight, prim_uom.weight * uom.multiply / uom.divide) AS weight
+    FROM product p
+    INNER JOIN product_uom prim_uom
+      USING (product_uom_id)
+    LEFT JOIN product_uom uom
+      ON uom.product_id = p.product_id;
 
 --
 -- Triggers

@@ -9,10 +9,13 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
+      ti.item_uuid AS "itemUuid",
+      ti.task_id AS "taskId",
       ti.finished_at AS "finishedAt",
       TRUE AS ok
     FROM scm.task_item ti
     WHERE ti.item_uuid = ($1->>'itemUuid')::uuid
+      AND ti.task_id = ($1->>'taskId')::integer
   ) r;
 END
 $$

@@ -63,8 +63,8 @@
     "weight": {
       "type": "number"
     },
-    "uomId": {
-      "type": "integer"
+    "primaryUomId": {
+      "type": ["integer", "null"]
     }
   },
   "required": ["productId"],
