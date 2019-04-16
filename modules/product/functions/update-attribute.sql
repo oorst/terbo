@@ -6,9 +6,6 @@
   If you want to set a field to NULL then set the corresponding field to `null`
   in the JSON payload.
 
-  When cost or pricing is included a new cost and/or price record is created to
-  maintain a history.
-
   @def prd.update_product (json)
   @returns {json}
   @api

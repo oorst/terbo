@@ -8,14 +8,10 @@ BEGIN
       SELECT
         string_agg(q.column, ', ') AS column,
         string_agg(q.value, ', ') AS value,
-        ($1->>'componentId')::integer AS component_id
+        ($1->>'component_id')::integer AS component_id
       FROM (
         SELECT
-          CASE p.key
-            WHEN 'productId' THEN 'product_id'
-            WHEN 'uomId' THEN 'uom_id'
-            ELSE p.key
-          END AS column,
+          p.key AS column,
           CASE
             -- check if it's a number
             WHEN p.value ~ '^\d+(.\d+)?$' THEN
@@ -25,12 +21,15 @@ BEGIN
             ELSE quote_literal(p.value)
           END AS value
         FROM json_each_text($1) p
-        WHERE p.key != 'componentId' -- Don't include the id
+        WHERE p.key != 'component_id' -- Don't include the id
       ) q
     ) c
   );
 
-  SELECT '{ "ok": true }'::json INTO result;
+  SELECT json_strip_nulls(to_json(r)) INTO result
+  FROM (
+    SELECT * FROM prd.components(component_id => ($1->>'component_id')::integer)
+  ) r;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

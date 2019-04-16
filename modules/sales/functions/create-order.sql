@@ -3,11 +3,11 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      j."buyerId" AS buyer_id,
-      j."userId" AS created_by
+      j.buyer_id,
+      j.user_id AS created_by
     FROM json_to_record($1) AS j (
-      "buyerId"   integer,
-      "userId" integer
+      buyer_id integer,
+      user_id  integer
     )
   ), sales_order AS (
     INSERT INTO sales.order (

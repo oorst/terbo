@@ -2,11 +2,11 @@
   "title": "sales.create_order(json)",
   "description": "expected payload for sales.create_order(json)",
   "properties": {
-    "userId": {
+    "user_id": {
       "type": "integer",
       "description": "userId of the person calling sales.create_order()"
     },
-    "buyerId": {
+    "buyer_id": {
       "type": "integer",
       "description": "partyId of the buyer for the order"
     },
@@ -14,5 +14,5 @@
       "type": "object"
     }
   },
-  "required": ["userId", "buyerId"]
+  "required": ["user_id", "buyer_id"]
 }

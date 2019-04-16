@@ -14,7 +14,7 @@
     "name": {
       "type": "string"
     },
-    "description": {
+    "shortDesc": {
       "type": "string"
     },
     "familyId": {

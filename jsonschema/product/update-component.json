@@ -3,16 +3,13 @@
   "description": "expected payload for prd.update_component(JSON)",
   "type": "object",
   "properties": {
-    "componentId": {
+    "component_id": {
       "type": "integer"
     },
     "quantity": {
       "type": ["number", "null"]
-    },
-    "uomId": {
-      "type": ["integer", "null"]
     }
   },
   "additionalProperties": false,
-  "required": ["componentId"]
+  "required": ["component_id"]
 }

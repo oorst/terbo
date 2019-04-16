@@ -20,47 +20,47 @@ BEGIN
       i.created,
       i.created_by
     FROM sales.invoice i
-    WHERE i.invoice_id = coalesce(($1->>'invoiceId')::integer, id)
+    WHERE i.invoice_id = coalesce(($1->>'invoice_id')::integer, id)
   ), totals AS (
     SELECT
       (SELECT invoice_id FROM invoice) AS invoice_id,
-      sum(r."grossLineTotal") AS "grossTotal",
-      sum(r."netLineTotal") AS "netTotal"
+      sum(r.total_gross) AS total_gross,
+      sum(r.total_price) AS total_price
     FROM jsonb_to_recordset(
-      (SELECT data->'lineItems' FROM invoice)
+      (SELECT data->'line_items' FROM invoice)
     ) AS r (
-      "grossLineTotal" numeric(10,2),
-      "netLineTotal"   numeric(10,2)
+      total_gross numeric(10,2),
+      total_price numeric(10,2)
     )
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      invoice.invoice_id AS "invoiceId",
-      invoice.recipient_id AS "recipientId",
-      rec.name AS "recipientName",
-      rec.type AS "recipientType",
+      invoice.invoice_id,
+      invoice.recipient_id,
+      rec.name AS recipient_name,
+      rec.type AS recipient_type,
       invoice.status,
-      invoice.short_desc AS "shortDescription",
-      invoice.data->'lineItems' AS "lineItems",
-      timezone('Australia/Melbourne', invoice.created)::date AS "createdDate",
-      invoice.issued_at::date AS "issueDate",
-      invoice.due_date AS "dueDate",
+      invoice.short_desc ,
+      invoice.data->'line_items' AS line_items,
+      timezone('Australia/Melbourne', invoice.created)::date AS created_date,
+      invoice.issued_at::date AS issue_date,
+      invoice.due_date,
       NULLIF(
         (invoice.due_date < CURRENT_TIMESTAMP) AND invoice.payment_status = 'OWING',
         FALSE
       ) AS overdue,
-      invoice.payment_status AS "paymentStatus",
+      invoice.payment_status,
       invoice.period,
       invoice.notes,
-      p.name AS "createdByName",
-      p.email AS "createdByEmail",
-      p.mobile AS "createdByMobile",
-      p.phone AS "createdByPhone",
-      par.parent_id AS "parentId",
-      t."grossTotal",
-      t."netTotal",
-      (t."netTotal" - t."grossTotal") AS "taxTotal"
+      p.name AS created_by_name,
+      p.email AS created_by_email,
+      p.mobile AS creator_mobile,
+      p.phone AS creator_phone,
+      par.parent_id,
+      t.total_gross::numeric(10,2),
+      t.total_price::numeric(10,2),
+      (t.total_price - t.total_gross)::numeric(10,2) AS total_tax_amount
     FROM invoice
     LEFT JOIN sales.partial_invoice par
       USING (invoice_id)

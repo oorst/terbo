@@ -3,34 +3,44 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      j."userId" AS created_by,
-      j."orderId" AS order_id
+      j.user_id AS created_by,
+      j.order_id
     FROM json_to_record($1) AS j (
-      "userId"  integer,
-      "orderId" integer
+      user_id  integer,
+      order_id integer
     )
   ), invoice AS (
     INSERT INTO sales.invoice (
       order_id,
+      recipient_id,
+      data,
       created_by
     )
     SELECT
       p.order_id,
+      o.buyer_id,
+      (
+        SELECT
+          jsonb_build_object(
+            'line_items', json_strip_nulls(li)
+          )
+        FROM sales.line_items(p.order_id) li
+      ),
       p.created_by
     FROM payload p
-    INNER JOIN sales.order o
+    LEFT JOIN sales.order o
       USING (order_id)
     RETURNING *
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      i.invoice_id AS "invoiceId",
-      i.order_id AS "orderId",
+      i.invoice_id,
+      i.order_id,
       i.status,
       i.created,
-      p.party_id AS "creatorId",
-      p.name AS "creatorName"
+      p.party_id AS creator_id,
+      p.name AS creator_name
     FROM invoice i
     INNER JOIN person p
       ON p.party_id = i.created_by

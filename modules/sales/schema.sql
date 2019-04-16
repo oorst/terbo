@@ -47,7 +47,7 @@ CREATE SCHEMA sales
   -- Partial Invoice links invoices where a partial payment or deposit is made
   CREATE TABLE partial_invoice (
     parent_id  integer REFERENCES invoice (invoice_id) ON DELETE CASCADE,
-    invoice_id integer REFERENCES invoice (invoice_id) ON DELETE RESTRICT,
+    invoice_id integer REFERENCES invoice (invoice_id) ON DELETE CASCADE,
     PRIMARY KEY (parent_id, invoice_id)
   )
 
@@ -87,7 +87,7 @@ CREATE SCHEMA sales
     short_desc          text,
     data                jsonb,
     -- Percentage discount
-    line_discount       numeric(5,2),
+    discount       numeric(5,2),
     -- Dollar amount discount
     line_discount_amount numeric(10,2),
     -- Gross price charged

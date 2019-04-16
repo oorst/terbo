@@ -3,12 +3,10 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      j."parentId" AS parent_id,
-      j."productId" AS product_id,
-      j.quantity
+      *
     FROM json_to_record($1) AS j (
-      "parentId"  integer,
-      "productId" integer,
+      parent_id  integer,
+      product_id integer,
       quantity    numeric(10,3)
     )
   ), component AS (
@@ -25,7 +23,7 @@ BEGIN
   SELECT to_json(r) INTO result
   FROM (
     SELECT
-      component_id AS "componentId"
+      component_id
     FROM component
   ) r;
 END

@@ -4,31 +4,32 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      pr.product_id AS "productId",
+      pr.product_id,
+      pr.name,
       pr.type,
       pr.code,
       pr.sku,
-      pr.name,
-      pr.short_desc AS "shortDescription",
+      pr.supplier_code AS supplier_code,
+      pr.manufacturer_code,
+      pr.supplier_code,
+      pr.short_desc,
       pr.description,
-      pr.attributes,
       pr.url,
-      -- Family
-      fam.name AS "familyName",
-      coalesce(pr.sku, pr.code, pr.supplier_code, pr.manufacturer_code) AS "$code",
-      fam.code AS "familyCode",
-      fam.manufacturer_code AS "familyManufacturerCode",
-      fam.supplier_code AS "familySupplierCode",
-      man.id AS "manufacturerId",
-      man.name AS "manufacturerName",
-      pr.manufacturer_code AS "manufacturerCode",
-      -- Supplier
-      sup.id AS "supplierId",
-      sup.name AS "supplierName",
-      pr.supplier_code AS "supplierCode",
       pr.data,
-      -- Units
-      prd.uoms(pr.product_id) AS units,
+      uom.uom_id,
+      -- UOM
+      uom.name AS uom_name,
+      uom.abbr AS uom_abbr,
+      uom.type AS uom_type,
+      -- Family
+      fam.name AS family_name,
+      fam.code AS family_code,
+      -- Manufacturer
+      man.party_id AS manufacturer_id,
+      man.name AS manufacturer_name,
+      -- Supplier
+      sup.party_id AS supplier_id,
+      sup.name AS supplier_name,
       -- Tags
       (
         SELECT json_agg(tag.name)
@@ -37,7 +38,29 @@ BEGIN
           USING (tag_id)
         WHERE pt.product_id = pr.product_id
       ) AS tags,
-      NOT (component IS NULL) AS "isComposite",
+      -- Is this a composite product?
+      NULLIF(
+        EXISTS(
+          SELECT
+          FROM prd.component component
+          WHERE component.parent_id = pr.product_id
+        ),
+        FALSE
+      ) AS is_composite,
+      -- Is this an assembly product?
+      NULLIF(
+        EXISTS(
+          SELECT
+          FROM prd.part part
+          WHERE part.product_id = pr.product_id AND part.parent_uuid IS NULL
+        ),
+        FALSE
+      ) AS is_assembly,
+      -- Pricing
+      price.gross,
+      price.cost,
+      price.gross - price.cost AS profit,
+      -- Timestamps
       pr.created,
       pr.modified
     FROM prd.product pr
@@ -47,22 +70,22 @@ BEGIN
       ON fam.product_id = pr.family_id
     LEFT JOIN (
       SELECT
-        party_id AS id,
+        party_id,
         name,
         type
       FROM party_v
     ) man
-      ON man.id = pr.manufacturer_id
+      ON man.party_id = pr.manufacturer_id
     LEFT JOIN (
       SELECT
-        party_id AS id,
+        party_id,
         name,
         type
       FROM party_v
     ) sup
-      ON sup.id = pr.supplier_id
-    LEFT JOIN prd.component component
-      ON component.parent_id = pr.product_id
+      ON sup.party_id = pr.supplier_id
+    LEFT JOIN prd.price(pr.product_id) price
+      ON price.product_id = pr.product_id
     WHERE pr.product_id = $1
       AND (pr.end_at IS NULL OR pr.end_at > CURRENT_TIMESTAMP)
   ) r;
@@ -75,7 +98,7 @@ $$
 BEGIN
   SELECT prd.product(product_id) INTO result
   FROM prd.product
-  WHERE product_id = ($1->>'productId')::integer OR code = ($1->>'code') OR sku = ($1->>'code');
+  WHERE product_id = ($1->>'product_id')::integer OR code = ($1->>'code') OR sku = ($1->>'code');
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

@@ -7,9 +7,10 @@ BEGIN
       j.name,
       j."familyId" AS family_id
     FROM json_to_record($1) AS j (
-      type     text,
-      name     text,
-      "familyId" integer
+      type       text,
+      name       text,
+      short_desc text
+      family_id  integer
     )
   ), product AS (
       INSERT INTO prd.product (
@@ -20,23 +21,15 @@ BEGIN
       SELECT
         p.type,
         p.name,
+        p.short_desc,
         p.family_id
       FROM payload p
       RETURNING *
-    ), product_uom AS (
-      INSERT INTO prd.product_uom (
-        product_id,
-        primary_uom
-      )
-      SELECT
-        p.product_id,
-        TRUE
-      FROM product p
     )
     SELECT json_strip_nulls(to_json(r)) INTO result
     FROM (
       SELECT
-        p.product_id AS "productId",
+        p.product_id,
         p.type,
         coalesce(p.name, f.name) AS name
       FROM product p

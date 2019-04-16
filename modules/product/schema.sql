@@ -36,6 +36,7 @@ CREATE SCHEMA prd
     supplier_code     text,
     -- Text search vector
     tsv               tsvector,
+    uom_id            integer REFERENCES uom (uom_id) ON DELETE SET NULL,
     data              jsonb,
     -- The product_uom referenced here is the primary uom of the product
     primary_uom_id    integer REFERENCES product_uom (product_uom_id) ON DELETE RESTRICT,
@@ -62,6 +63,9 @@ CREATE SCHEMA prd
     value      text
   )
 
+  /**
+   * Components are for defining composite products.
+   */
   CREATE TABLE component (
     component_id serial PRIMARY KEY,
     parent_id    integer REFERENCES product (product_id) ON DELETE CASCADE,
@@ -70,6 +74,17 @@ CREATE SCHEMA prd
     quantity     numeric(10,3) DEFAULT 1,
     created      timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at       timestamp
+  )
+  
+  /**
+   * Parts are for defining assemlbies
+   */
+  CREATE TABLE part (
+    part_uuid  uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    parent_id  integer REFERENCES product (product_id) ON DELETE CASCADE,
+    product_id integer REFERENCES product (product_id) ON DELETE CASCADE,
+    quantity   numeric(10,3) DEFAULT 1.000,
+    part_name  text
   )
 
   CREATE TABLE product_tag (
@@ -93,24 +108,7 @@ CREATE SCHEMA prd
     created   timestamp DEFAULT CURRENT_TIMESTAMP,
     end_at    timestamp
   )
-
-  CREATE TABLE price (
-    price_id         serial PRIMARY KEY,
-    product_id       integer REFERENCES product (product_id) ON DELETE CASCADE,
-    product_uom_id   integer REFERENCES product_uom (product_uom_id) ON DELETE CASCADE,
-    cost             numeric(10,2),
-    gross            numeric(10,2),
-    price            numeric(10,2),
-    margin           numeric(4,3),
-    margin_id        integer REFERENCES margin (margin_id) ON DELETE SET NULL,
-    markup           numeric(10,2),
-    markup_id        integer REFERENCES markup (markup_id) ON DELETE SET NULL,
-    tax_excluded     boolean,
-    created          timestamp DEFAULT CURRENT_TIMESTAMP,
-    end_at           timestamp,
-    CONSTRAINT margin_value CHECK(margin > 0 AND margin < 1)
-  )
-
+  
   CREATE TABLE product_uom (
     product_uom_id serial PRIMARY KEY,
     product_id     integer REFERENCES product (product_id) ON DELETE CASCADE,
@@ -125,6 +123,23 @@ CREATE SCHEMA prd
     UNIQUE (product_id, uom_id)
   )
 
+  CREATE TABLE price (
+    price_id         serial PRIMARY KEY,
+    product_id       integer REFERENCES product (product_id) ON DELETE CASCADE,
+    product_uom_id   integer REFERENCES product_uom (product_uom_id) ON DELETE CASCADE,
+    cost             numeric(10,2),
+    gross            numeric(10,2),
+    price            numeric(10,2),
+    margin           numeric(4,3),
+    margin_id        integer REFERENCES margin (margin_id) ON DELETE SET NULL,
+    markup           numeric(10,2),
+    markup_id        integer REFERENCES markup (markup_id) ON DELETE SET NULL,
+    tax_excluded     boolean,
+    created          timestampz DEFAULT CURRENT_TIMESTAMP,
+    end_at           timestamp,
+    CONSTRAINT margin_value CHECK(margin > 0 AND margin < 1)
+  )
+
   CREATE VIEW product_tag_v AS
     SELECT
       p.product_id,
@@ -134,6 +149,123 @@ CREATE SCHEMA prd
       USING (product_id)
     INNER JOIN tag t
       USING (tag_id)
+      
+  CREATE OR REPLACE VIEW prd.product_v AS
+    SELECT
+      p.*,
+      u.name AS uom_name,
+      u.abbr AS uom_abbr,
+      u.type AS uom_type,
+      pr.price_id,
+      pr.cost,
+      pr.gross,
+      pr.price,
+      pr.tax_excluded,
+      fam.product_id AS family_product_id,
+      fam.name AS family_name,
+      fam.code AS family_code,
+      EXISTS(
+        SELECT
+        FROM prd.component component
+        WHERE component.parent_id = p.product_id
+      ) AS is_composite,
+      -- Is this an assembly product?
+      EXISTS(
+        SELECT
+        FROM prd.part part
+        WHERE part.product_id = p.product_id AND part.parent_uuid IS NULL
+      ) AS is_assembly
+    FROM prd.product p
+    LEFT JOIN prd.uom u
+      USING (uom_id)
+    -- Join with the latest price in the price history
+    LEFT JOIN LATERAL (
+      SELECT
+        price.*
+      FROM prd.price price
+      WHERE price.price_id = (
+        SELECT
+          MAX(price_id)
+        FROM prd.price
+        WHERE product_id = p.product_id
+      )
+    ) pr ON pr.product_id = p.product_id
+    LEFT JOIN prd.product fam
+      ON p.family_id = fam.product_id
+
+  -- Get the current valid price for a product and where necessary, calculate
+  -- the missing fields
+  CREATE OR REPLACE VIEW prd.price_v AS
+    SELECT
+      p.price_id,
+      p.product_id,
+      p.cost,
+      gross.amount AS gross,
+      price.amount AS price,
+      profit.amount AS profit,
+      COALESCE(
+        p.margin,
+        mg.amount,
+        (profit.amount / gross.amount)::numeric(4,3)
+      ) AS margin,
+      COALESCE(
+        p.markup,
+        mk.amount,
+        (profit.amount / p.cost)::numeric(4,3)
+      ) AS markup,
+      -- Margin
+      mg.margin_id,
+      mg.name AS margin_name,
+      mg.amount AS margin_amount,
+      --Markup
+      mk.markup_id,
+      mk.name AS markup_name,
+      mk.amount AS markup_amount
+    FROM prd.price p
+    LEFT JOIN prd.margin mg
+      USING (margin_id)
+    LEFT JOIN prd.markup mk
+      USING (markup_id)
+    LEFT JOIN LATERAL (
+      SELECT
+        p.price_id,
+        CASE
+          WHEN p.price IS NOT NULL THEN (p.price * 0.9090909)::numeric(10,2) -- TODO remove this constant when taxes are implemented
+          WHEN p.gross IS NOT NULL THEN p.gross
+          WHEN p.cost IS NOT NULL AND p.margin IS NOT NULL
+            THEN (p.cost / (1.000 - margin))::numeric(10,2)
+          WHEN p.cost IS NOT NULL AND NOT (mg IS NULL)
+            THEN (p.cost / (1.000 - mg.amount))::numeric(10,2)
+          WHEN p.cost IS NOT NULL AND p.markup IS NOT NULL
+            THEN (p.cost * (1.000 + p.markup))::numeric(10,2)
+          WHEN p.cost IS NOT NULL AND NOT (mk IS NULL)
+            THEN (p.cost * (1.000 + mk.amount))::numeric(10,2)
+          WHEN p.cost IS NOT NULL
+            THEN p.cost
+          ELSE NULL
+        END AS amount
+    ) gross ON gross.price_id = p.price_id
+    LEFT JOIN LATERAL (
+      SELECT
+        p.price_id,
+        CASE
+          WHEN p.price IS NOT NULL THEN p.price
+          WHEN p.gross IS NOT NULL THEN (p.gross * 1.1)::numeric(10,2) -- TODO remove this constant when taxes are implemented
+          WHEN gross.amount IS NOT NULL THEN (gross.amount * 1.1)::numeric(10,2) -- TODO remove this constant when taxes are implemented
+          ELSE NULL
+        END AS amount
+    ) price ON price.price_id = p.price_id
+    LEFT JOIN LATERAL (
+      SELECT
+        p.price_id,
+        (gross.amount - COALESCE(p.cost, 0.0))::numeric(10,2) AS amount
+    ) profit ON profit.price_id = p.price_id
+    WHERE p.price_id = (
+      SELECT
+        MAX(price_id)
+      FROM prd.price _
+      WHERE _.product_id = p.product_id
+    ) AND (p.end_at IS NULL OR p.end_at > CURRENT_TIMESTAMP)
 
   CREATE OR REPLACE VIEW product_list_v AS
     SELECT
@@ -244,18 +376,33 @@ CREATE SCHEMA prd
         price.product_uom_id,
         (n.price - price.gross)::numeric(10,2) AS tax_amount
     ) t ON t.product_uom_id = uom.product_uom_id
-
-  -- For viewing a product as a line item
-  CREATE OR REPLACE VIEW line_item_v AS
+    
+  CREATE OR REPLACE VIEW prd.component_v AS
     SELECT
-      -- Where fields are null determine values by using divide or multiply with
-      -- the primary_uom's values
-      coalesce(uom.weight, prim_uom.weight * uom.multiply / uom.divide) AS weight
-    FROM product p
-    INNER JOIN product_uom prim_uom
-      USING (product_uom_id)
-    LEFT JOIN product_uom uom
-      ON uom.product_id = p.product_id;
+      c.component_id,
+      c.parent_id,
+      c.product_id,
+      c.quantity,
+      p.name AS product_name,
+      uom.name AS uom_name,
+      uom.abbr AS uom_abbr
+    FROM prd.component c
+    LEFT JOIN prd.product p
+      USING (product_id)
+    LEFT JOIN prd.uom uom
+      ON uom.uom_id = p.uom_id;
+
+  -- -- For viewing a product as a line item
+  -- CREATE OR REPLACE VIEW line_item_v AS
+  --   SELECT
+  --     -- Where fields are null determine values by using divide or multiply with
+  --     -- the primary_uom's values
+  --     coalesce(uom.weight, prim_uom.weight * uom.multiply / uom.divide) AS weight
+  --   FROM product p
+  --   INNER JOIN product_uom prim_uom
+  --     USING (product_uom_id)
+  --   LEFT JOIN product_uom uom
+  --     ON uom.product_id = p.product_id;
 
 --
 -- Triggers

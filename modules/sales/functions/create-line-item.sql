@@ -7,11 +7,10 @@ BEGIN
   ELSE
     WITH payload AS (
       SELECT
-        j."orderId" AS order_id,
-        j."productId" AS product_id
+        j.*
       FROM json_to_record($1) AS j (
-        "orderId"   integer,
-        "productId" integer
+        order_id   integer,
+        product_id integer
       )
     ), line_item AS (
       INSERT INTO sales.line_item (
@@ -27,12 +26,12 @@ BEGIN
     SELECT json_strip_nulls(to_json(r)) INTO result
     FROM (
       SELECT
-        li.line_item_id AS "lineItemId",
-        li.order_id AS "orderId",
-        li.product_id AS "productId",
+        li.line_item_id,
+        li.order_id,
+        li.product_id,
         p.code,
         p.name,
-        p.short_desc AS "shortDescription"
+        p.short_desc
       FROM line_item li
       LEFT JOIN prd.product_list_v p
         USING (product_id)

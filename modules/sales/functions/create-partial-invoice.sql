@@ -10,17 +10,17 @@ BEGIN
     SELECT
       p."invoiceId" AS invoice_id,
       p.name,
-      p."shortDescription",
-      p."grossLineTotal",
-      p."netLineTotal",
+      p."shortDesc" AS short_desc,
+      p."totalGross" AS total_gross,
+      p."totalPrice" AS total_price,
       p."userId" AS created_by
     FROM json_to_record($1) AS p (
-      "invoiceId"        integer, -- The parent invoice for which a partial invoice is created
-      name               text,
-      "shortDescription" text,
-      "grossLineTotal"   numeric(10,2),
-      "netLineTotal"     numeric(10,2),
-      "userId"           integer
+      "invoiceId"  integer, -- The parent invoice for which a partial invoice is created
+      name         text,
+      "shortDesc"  text,
+      "totalGross" numeric(10,2),
+      "totalPrice" numeric(10,2),
+      "userId"     integer
     )
   ),
   -- Gt the parent invoice
@@ -35,19 +35,19 @@ BEGIN
   line_item AS (
     SELECT
       p.name,
-      p."shortDescription",
+      p.short_desc,
       -- Gross line total
       CASE
-        WHEN p."grossLineTotal" IS NOT NULL THEN
-          p."grossLineTotal"
-        ELSE (p."netLineTotal" * 0.90909)::numeric(10,2) -- TODO get rid of this!
-      END AS "grossLineTotal",
+        WHEN p.total_gross IS NOT NULL THEN
+          p.total_gross
+        ELSE (p.total_price * 0.90909)::numeric(10,2) -- TODO get rid of this!
+      END AS total_gross,
       -- Net line total
       CASE
-        WHEN p."netLineTotal" IS NOT NULL THEN
-          p."netLineTotal"
-        ELSE (p."grossLineTotal" * 1.1)::numeric(10,2)
-      END AS "netLineTotal"
+        WHEN p.total_price IS NOT NULL THEN
+          p.total_price
+        ELSE (p.total_gross * 1.1)::numeric(10,2)
+      END AS total_price
     FROM payload p
   ),
   -- Create the child invoice
@@ -62,13 +62,13 @@ BEGIN
       (SELECT order_id FROM parent_invoice),
       (SELECT recipient_id FROM parent_invoice),
       json_build_object(
-        'lineItems',
+        'line_items',
         jsonb_build_array(
           jsonb_build_object(
             'name', li.name,
-            'shortDescription', li."shortDescription",
-            'grossLineTotal', li."grossLineTotal",
-            'netLineTotal', li."netLineTotal"
+            'short_desc', li.short_desc,
+            'total_gross', li.total_gross,
+            'total_price', li.total_price
           )
         )
       ),

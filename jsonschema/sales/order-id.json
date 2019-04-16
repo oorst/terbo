@@ -1,11 +1,11 @@
 {
-  "title": "orderId",
-  "description": "expected JSON payload for functions that require an orderId",
+  "title": "order_id",
+  "description": "expected JSON payload for functions that require an order_id",
   "type": "object",
   "properties": {
-    "orderId": {
+    "order_id": {
       "type": "integer"
     }
   },
-  "required": ["orderId"]
+  "required": ["order_id"]
 }

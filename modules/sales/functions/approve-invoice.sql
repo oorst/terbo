@@ -11,15 +11,15 @@ BEGIN
       'ISSUED',
       (CURRENT_TIMESTAMP + (INTERVAL '1 day') * i.period)::date
     )
-    WHERE i.invoice_id = ($1->>'invoiceId')::integer
+    WHERE i.invoice_id = ($1->>'invoice_id')::integer
     RETURNING *
   )
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      invoice_id AS "invoiceId",
+      invoice_id,
       status,
-      due_date AS "dueDate"
+      due_date
     FROM invoice
   ) r;
 END

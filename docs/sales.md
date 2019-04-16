@@ -1,4 +1,15 @@
-## Sales
+# Sales
+
+## Orders
+
+Orders organise the transaction between buyer and seller.
+
+Orders can be in one of several states: PENDING, CONFIRMED.
+
+PENDING orders show the current prices of products.
+
+CONFIRMED orders lock the prices to what they were when the order was
+confirmed. Invoices can only be created from confirmed orders.
 
 ### API
 

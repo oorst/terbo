@@ -1,0 +1,14 @@
+{
+  "title": "sales.create_line_item(json)",
+  "description": "expected payload for sales.create_line_item(json)",
+  "properties": {
+    "order_id": {
+      "type": "integer"
+    },
+    "product_id": {
+      "type": "integer"
+    }
+  },
+  "required": ["order_id", "product_id"],
+  "additionalProperties": false
+}

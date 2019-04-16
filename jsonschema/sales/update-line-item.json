@@ -2,7 +2,7 @@
   "title": "sales.update_order_line_item(json)",
   "description": "expected payload for sales.update_order_line_item(json)",
   "properties": {
-    "lineItemId": {
+    "line_item_id": {
       "type": "integer"
     },
     "quantity": {
@@ -12,18 +12,18 @@
       "type": ["number", "null"]
     },
     "gross": {
-      "type": "number"
-    },
-    "netLineTotal": {
       "type": ["number", "null"]
     },
-    "grossLineTotal": {
+    "total_price": {
       "type": ["number", "null"]
     },
-    "shortDescription": {
+    "total_gross": {
+      "type": ["number", "null"]
+    },
+    "short_desc": {
       "type": ["string", "null"]
     }
   },
-  "required": ["lineItemId"],
+  "required": ["line_item_id"],
   "additionalProperties": false
 }

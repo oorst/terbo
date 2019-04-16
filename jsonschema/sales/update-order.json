@@ -2,22 +2,26 @@
   "title": "sales.update_order(json)",
   "description": "expected payload for sales.update_order(json)",
   "properties": {
-    "orderId": {
+    "order_id": {
       "type": "integer"
     },
     "notes": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "nickname": {
-      "type": "string"
+      "type": ["string", "null"]
     },
-    "purchaseOrderNumber": {
-      "type": "string"
+    "purchase_order_number": {
+      "type": ["string", "null"]
     },
-    "shortDescription": {
-      "type": "string"
+    "short_desc": {
+      "type": ["string", "null"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING", "CONFIRMED", "FINISHED", "VOID"]
     }
   },
-  "required": ["orderId"],
+  "required": ["order_id"],
   "additionalProperties": false
 }

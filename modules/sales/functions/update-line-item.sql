@@ -8,15 +8,10 @@ BEGIN
       SELECT
         string_agg(q.column, ', ') AS column,
         string_agg(q.value, ', ') AS value,
-        ($1->>'lineItemId')::integer AS line_item_id
+        ($1->>'line_item_id')::integer AS line_item_id
       FROM (
         SELECT
-          CASE p.key
-            WHEN 'grossLineTotal' THEN 'gross_line_total'
-            WHEN 'netLineTotal' THEN 'net_line_total'
-            WHEN 'shortDescription' THEN 'short_desc'
-            ELSE p.key
-          END AS column,
+          p.key AS column,
           CASE
             -- check if it's a number
             WHEN p.value ~ '^\d+(.\d+)?$' THEN
@@ -26,12 +21,13 @@ BEGIN
             ELSE quote_literal(p.value)
           END AS value
         FROM json_each_text($1) p
-        WHERE p.key != 'lineItemId'
+        WHERE p.key != 'line_item_id'
       ) q
     ) c
   );
 
-  SELECT format('{ "lineItemId": %s, "ok": true }', $1->>'lineItemId')::json INTO result;
+  SELECT json_strip_nulls(to_json(r)) INTO result
+  FROM sales.line_item(($1->>'line_item_id')::integer) r;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

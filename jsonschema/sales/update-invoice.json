@@ -5,8 +5,18 @@
     "invoiceId": {
       "type": "integer"
     },
+    "dueDate": {
+      "type": "string"
+    },
+    "issueDate": {
+      "type": "string"
+    },
     "period": {
       "type": "integer"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "ISSUED", "DELETED", "VOID"]
     },
     "notes": {
       "type": "string"

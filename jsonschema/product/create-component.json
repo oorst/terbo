@@ -3,20 +3,16 @@
   "description": "expected JSON payload for prd.create_component(json)",
   "type": "object",
   "properties": {
-    "userId": {
-      "type": "integer",
-      "description": "id of the caller"
-    },
-    "parentId": {
+    "parent_id": {
       "type": "integer"
     },
-    "productId": {
+    "product_id": {
       "type": "integer"
     },
     "quantity": {
       "type": "number"
     }
   },
-  "required": ["parentId", "productId"],
+  "required": ["parent_id", "product_id"],
   "additionalProperties": false
 }

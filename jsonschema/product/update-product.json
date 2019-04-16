@@ -3,42 +3,42 @@
   "description": "expected JSON payload for prd.update_product(json)",
   "type": "object",
   "properties": {
-    "productId": {
+    "product_id": {
       "type": "integer",
       "description": "product_id of the product"
     },
     "name": {
-      "type": "string"
+      "type": ["string", "null"]
     },
-    "shortDescription": {
-      "type": "string"
+    "short_desc": {
+      "type": ["string", "null"]
     },
     "description": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "url": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "code": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "sku": {
-      "type": "string"
+      "type": ["string", "null"]
     },
-    "familyId": {
-      "type": "integer"
+    "family_id": {
+      "type": ["integer", "null"]
     },
-    "manufacturerId": {
-      "type": "integer"
+    "manufacturer_id": {
+      "type": ["integer", "null"]
     },
-    "supplierId": {
-      "type": "integer"
+    "supplier_id": {
+      "type": ["integer", "null"]
     },
-    "manufacturerCode": {
-      "type": "string"
+    "manufacturer_code": {
+      "type": ["string", "null"]
     },
     "attributes": {
-      "type": "array",
+      "type": ["array", "null"],
       "items": {
         "type": "object",
         "properties": {
@@ -51,22 +51,22 @@
         }
       }
     },
-    "supplierCode": {
-      "type": "string"
+    "supplier_code": {
+      "type": ["string", "null"]
     },
     "tags" : {
-      "type": "array",
+      "type": ["array", "null"],
       "items": {
         "type": "string"
       }
     },
     "weight": {
-      "type": "number"
+      "type": ["number", "null"]
     },
-    "primaryUomId": {
+    "uom_id": {
       "type": ["integer", "null"]
     }
   },
-  "required": ["productId"],
+  "required": ["product_id"],
   "additionalProperties": false
 }

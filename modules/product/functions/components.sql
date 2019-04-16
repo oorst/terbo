@@ -1,35 +1,38 @@
+CREATE OR REPLACE FUNCTION prd.components (
+  component_id integer DEFAULT NULL,
+  parent_id    integer DEFAULT NULL
+) RETURNS SETOF prd.component_v AS
+$$
+BEGIN
+  RETURN QUERY
+  SELECT
+    *
+  FROM prd.component_v c
+  WHERE c.component_id = $1 OR c.parent_id = $2;
+END
+$$
+LANGUAGE 'plpgsql' SECURITY DEFINER;
+
 CREATE OR REPLACE FUNCTION prd.components (json, OUT result json) AS
 $$
 BEGIN
   SELECT json_strip_nulls(json_agg(r)) INTO result
   FROM (
     SELECT
-      c.component_id AS "componentId",
-      c.product_id AS "productId",
-      c.uom_id AS "uomId",
+      c.component_id,
+      c.product_id,
       c.quantity,
       pv.name,
       pv.code,
-      pv.short_desc AS "shortDescription",
-      (
-        SELECT
-          array_agg(
-            json_build_object(
-              'uomId', pu.uom_id,
-              'name', uom.name,
-              'abbr', uom.abbr,
-              'type', uom.type
-            )
-          )
-        FROM prd.product_uom_v pu
-        LEFT JOIN prd.uom uom
-          USING (uom_id)
-        WHERE pu.product_id = c.product_id
-      ) AS units
+      pv.short_desc,
+      uom.name AS uom_name,
+      uom.abbr AS uom_abbr
     FROM prd.component c
-    INNER JOIN prd.product_list_v pv
+    LEFT JOIN prd.product_v pv
       USING (product_id)
-    WHERE c.parent_id = ($1->>'productId')::integer
+    LEFT JOIN prd.uom uom
+      ON uom.uom_id = pv.uom_id
+    WHERE c.parent_id = ($1->>'product_id')::integer
   ) r;
 END
 $$

@@ -10,21 +10,21 @@
       "type": "integer"
     },
     "name": {
-      "type": "string"
+      "type": ["string"]
     },
-    "shortDescription": {
-      "type": ["string", "null"]
+    "shortDesc": {
+      "type": ["string"]
     },
-    "grossLineTotal": {
+    "totalGross": {
       "type": "number"
     },
-    "netLineTotal": {
+    "totalPrice": {
       "type": "number"
     }
   },
   "oneOf": [
-    { "required": ["grossLineTotal"] },
-    { "required": ["netLineTotal"] }
+    { "required": ["totalGross"] },
+    { "required": ["totalPrice"] }
   ],
   "required": ["userId", "invoiceId", "name"]
 }
