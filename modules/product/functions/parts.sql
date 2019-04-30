@@ -12,8 +12,8 @@ BEGIN
         prd.parts(parent_uuid => p.part_uuid) AS children
       FROM prd.part p
       LEFT JOIN prd.product_v pv
-        USING (product_id)
-      WHERE p.product_id = ($1->>'product_id')::integer
+        USING (product_uuid)
+      WHERE p.product_uuid = ($1->>'product_uuid')::uuid
     ) r;
   ELSIF $2 IS NOT NULL THEN
     SELECT json_strip_nulls(json_agg(r)) INTO result
@@ -26,7 +26,7 @@ BEGIN
         prd.parts(parent_uuid => p.part_uuid) AS children
       FROM prd.part p
       LEFT JOIN prd.product_v pv
-        USING (product_id)
+        USING (product_uuid)
       WHERE p.parent_uuid = $2
     ) r;
   END IF;

@@ -1,10 +1,10 @@
-CREATE OR REPLACE FUNCTION prd.product (integer, OUT result json) AS
+CREATE OR REPLACE FUNCTION prd.product (uuid, OUT result json) AS
 $$
 BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      pr.product_id,
+      pr.product_uuid,
       pr.name,
       pr.type,
       pr.code,
@@ -16,6 +16,7 @@ BEGIN
       pr.description,
       pr.url,
       pr.data,
+      pr.weight,
       uom.uom_id,
       -- UOM
       uom.name AS uom_name,
@@ -25,25 +26,17 @@ BEGIN
       fam.name AS family_name,
       fam.code AS family_code,
       -- Manufacturer
-      man.party_id AS manufacturer_id,
+      man.party_uuid AS manufacturer_id,
       man.name AS manufacturer_name,
       -- Supplier
-      sup.party_id AS supplier_id,
+      sup.party_uuid AS supplier_id,
       sup.name AS supplier_name,
-      -- Tags
-      (
-        SELECT json_agg(tag.name)
-        FROM prd.product_tag pt
-        INNER JOIN tag
-          USING (tag_id)
-        WHERE pt.product_id = pr.product_id
-      ) AS tags,
       -- Is this a composite product?
       NULLIF(
         EXISTS(
           SELECT
           FROM prd.component component
-          WHERE component.parent_id = pr.product_id
+          WHERE component.parent_uuid = pr.product_uuid
         ),
         FALSE
       ) AS is_composite,
@@ -52,14 +45,10 @@ BEGIN
         EXISTS(
           SELECT
           FROM prd.part part
-          WHERE part.product_id = pr.product_id AND part.parent_uuid IS NULL
+          WHERE part.product_uuid = pr.product_uuid AND part.parent_uuid IS NULL
         ),
         FALSE
       ) AS is_assembly,
-      -- Pricing
-      price.gross,
-      price.cost,
-      price.gross - price.cost AS profit,
       -- Timestamps
       pr.created,
       pr.modified
@@ -67,26 +56,24 @@ BEGIN
     LEFT JOIN prd.uom uom
       USING (uom_id)
     LEFT JOIN prd.product fam
-      ON fam.product_id = pr.family_id
+      ON fam.product_uuid = pr.family_uuid
     LEFT JOIN (
       SELECT
-        party_id,
+        party_uuid,
         name,
         type
-      FROM party_v
+      FROM core.party_v
     ) man
-      ON man.party_id = pr.manufacturer_id
+      ON man.party_uuid = pr.manufacturer_uuid
     LEFT JOIN (
       SELECT
-        party_id,
+        party_uuid,
         name,
         type
-      FROM party_v
+      FROM core.party_v
     ) sup
-      ON sup.party_id = pr.supplier_id
-    LEFT JOIN prd.price(pr.product_id) price
-      ON price.product_id = pr.product_id
-    WHERE pr.product_id = $1
+      ON sup.party_uuid = pr.supplier_uuid
+    WHERE pr.product_uuid = $1
       AND (pr.end_at IS NULL OR pr.end_at > CURRENT_TIMESTAMP)
   ) r;
 END
@@ -96,9 +83,9 @@ LANGUAGE 'plpgsql';
 CREATE OR REPLACE FUNCTION prd.product (json, OUT result json) AS
 $$
 BEGIN
-  SELECT prd.product(product_id) INTO result
-  FROM prd.product
-  WHERE product_id = ($1->>'product_id')::integer OR code = ($1->>'code') OR sku = ($1->>'code');
+  SELECT prd.product(p.product_uuid) INTO result
+  FROM prd.product p
+  WHERE p.product_uuid = ($1->>'product_uuid')::uuid OR code = ($1->>'code') OR sku = ($1->>'code');
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

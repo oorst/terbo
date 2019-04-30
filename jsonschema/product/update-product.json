@@ -3,9 +3,9 @@
   "description": "expected JSON payload for prd.update_product(json)",
   "type": "object",
   "properties": {
-    "product_id": {
-      "type": "integer",
-      "description": "product_id of the product"
+    "product_uuid": {
+      "type": "string",
+      "description": "product_uuid of the product"
     },
     "name": {
       "type": ["string", "null"]
@@ -25,13 +25,13 @@
     "sku": {
       "type": ["string", "null"]
     },
-    "family_id": {
+    "family_uuid": {
       "type": ["integer", "null"]
     },
-    "manufacturer_id": {
+    "manufacturer_uuid": {
       "type": ["integer", "null"]
     },
-    "supplier_id": {
+    "supplier_uuid": {
       "type": ["integer", "null"]
     },
     "manufacturer_code": {
@@ -67,6 +67,6 @@
       "type": ["integer", "null"]
     }
   },
-  "required": ["product_id"],
+  "required": ["product_uuid"],
   "additionalProperties": false
 }

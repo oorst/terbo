@@ -3,9 +3,9 @@
   "description": "expected JSON payload for functions that require a product_id",
   "type": "object",
   "properties": {
-    "product_id": {
-      "type": "integer"
+    "product_uuid": {
+      "type": "string"
     }
   },
-  "required": ["product_id"]
+  "required": ["product_uuid"]
 }

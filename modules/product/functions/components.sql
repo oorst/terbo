@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION prd.components (
-  component_id integer DEFAULT NULL,
-  parent_id    integer DEFAULT NULL
+  component_uuid uuid DEFAULT NULL,
+  parent_uuid    uuid DEFAULT NULL
 ) RETURNS SETOF prd.component_v AS
 $$
 BEGIN
@@ -8,7 +8,7 @@ BEGIN
   SELECT
     *
   FROM prd.component_v c
-  WHERE c.component_id = $1 OR c.parent_id = $2;
+  WHERE c.component_uuid = $1 OR c.parent_uuid = $2;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;
@@ -19,20 +19,20 @@ BEGIN
   SELECT json_strip_nulls(json_agg(r)) INTO result
   FROM (
     SELECT
-      c.component_id,
-      c.product_id,
+      c.component_uuid,
+      c.product_uuid,
       c.quantity,
-      pv.name,
+      pv.name AS product_name,
       pv.code,
       pv.short_desc,
       uom.name AS uom_name,
       uom.abbr AS uom_abbr
     FROM prd.component c
     LEFT JOIN prd.product_v pv
-      USING (product_id)
+      USING (product_uuid)
     LEFT JOIN prd.uom uom
       ON uom.uom_id = pv.uom_id
-    WHERE c.parent_id = ($1->>'product_id')::integer
+    WHERE c.parent_uuid = ($1->>'product_uuid')::uuid
   ) r;
 END
 $$

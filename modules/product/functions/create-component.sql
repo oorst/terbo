@@ -5,14 +5,14 @@ BEGIN
     SELECT
       *
     FROM json_to_record($1) AS j (
-      parent_id  integer,
-      product_id integer,
+      parent_uuid  uuid,
+      product_uuid uuid,
       quantity    numeric(10,3)
     )
   ), component AS (
     INSERT INTO prd.component (
-      parent_id,
-      product_id,
+      parent_uuid,
+      product_uuid,
       quantity
     )
     SELECT
@@ -23,7 +23,7 @@ BEGIN
   SELECT to_json(r) INTO result
   FROM (
     SELECT
-      component_id
+      component_uuid
     FROM component
   ) r;
 END

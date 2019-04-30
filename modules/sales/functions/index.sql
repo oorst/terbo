@@ -7,6 +7,8 @@
 \ir list-invoices.sql
 \ir list-orders.sql
 \ir list-quotes.sql
+\ir margins.sql
+\ir markups.sql
 \ir issue-quote.sql
 \ir order.sql
 \ir quote.sql

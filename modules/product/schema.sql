@@ -31,6 +31,7 @@ CREATE TABLE prd.product (
   manufacturer_code text,
   supplier_uuid     uuid REFERENCES core.party (party_uuid) ON DELETE SET NULL,
   supplier_code     text,
+  weight            numeric(10,3),
   -- Text search vector
   tsv               tsvector,
   uom_id            integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,

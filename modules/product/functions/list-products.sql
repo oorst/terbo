@@ -13,10 +13,13 @@ BEGIN
       p.supplier_code,
       fam.product_uuid AS family_uuid,
       fam.name AS family_name,
-      fam.code AS family_code
+      fam.code AS family_code,
+      u.name AS uom_name
     FROM prd.product p
     LEFT JOIN prd.product fam
       ON fam.product_uuid = p.family_uuid
+    LEFT JOIN prd.uom u
+      ON u.uom_id = p.uom_id
     WHERE p.tsv @@ to_tsquery($1->>'search' || '.*')
     AND ($1->'type' IS NULL OR p.type = ($1->>'type')::prd.product_t)
   ) r;

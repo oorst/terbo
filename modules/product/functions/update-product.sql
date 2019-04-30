@@ -15,12 +15,12 @@ $$
 BEGIN
   EXECUTE (
     SELECT
-      format('UPDATE prd.product SET (%s) = (%s) WHERE product_id = ''%s''', c.column, c.value, c.product_id)
+      format('UPDATE prd.product SET (%s) = (%s) WHERE product_uuid = ''%s''', c.column, c.value, c.product_uuid)
     FROM (
       SELECT
         string_agg(q.column, ', ') AS column,
         string_agg(q.value, ', ') AS value,
-        ($1->>'product_id')::integer AS product_id
+        ($1->>'product_uuid')::uuid AS product_uuid
       FROM (
         SELECT
           p.key AS column,
@@ -38,7 +38,7 @@ BEGIN
     ) c
   );
 
-  SELECT prd.product(($1->>'product_id')::integer) INTO result;
+  SELECT prd.product(($1->>'product_uuid')::uuid) INTO result;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;
