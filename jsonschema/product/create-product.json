@@ -3,9 +3,9 @@
   "description": "expected JSON payload for prd.create_product(json)",
   "type": "object",
   "properties": {
-    "userId": {
-      "type": "integer",
-      "description": "id of the caller"
+    "user_id": {
+      "type": "string",
+      "description": "uuid of the caller"
     },
     "type": {
       "type": "string",
@@ -14,10 +14,10 @@
     "name": {
       "type": "string"
     },
-    "shortDesc": {
+    "short_desc": {
       "type": "string"
     },
-    "familyId": {
+    "family_uuid": {
       "type": "integer"
     }
   },
@@ -26,9 +26,9 @@
       "required": ["name"]
     },
     {
-      "required": ["familyId"]
+      "required": ["family_uuid"]
     }
   ],
-  "required": ["userId", "type"],
+  "required": ["type"],
   "additionalProperties": false
 }

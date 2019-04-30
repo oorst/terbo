@@ -7,8 +7,11 @@
     },
     "product_id": {
       "type": "integer"
+    },
+    "short_desc": {
+      "type": ["string", "null"]
     }
   },
-  "required": ["order_id", "product_id"],
+  "required": ["order_id"],
   "additionalProperties": false
 }

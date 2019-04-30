@@ -1,4 +1,3 @@
-\ir insert-address.sql
 \ir create-person.sql
 \ir create-organisation.sql
 \ir get-address.sql

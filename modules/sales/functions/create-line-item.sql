@@ -10,16 +10,19 @@ BEGIN
         j.*
       FROM json_to_record($1) AS j (
         order_id   integer,
-        product_id integer
+        product_id integer,
+        short_desc text
       )
     ), line_item AS (
       INSERT INTO sales.line_item (
         order_id,
-        product_id
+        product_id,
+        short_desc
       )
       SELECT
         p.order_id,
-        p.product_id
+        p.product_id,
+        p.short_desc
       FROM payload p
       RETURNING *
     )
@@ -29,12 +32,8 @@ BEGIN
         li.line_item_id,
         li.order_id,
         li.product_id,
-        p.code,
-        p.name,
-        p.short_desc
+        li.short_desc
       FROM line_item li
-      LEFT JOIN prd.product_list_v p
-        USING (product_id)
     ) r;
   END IF;
 END

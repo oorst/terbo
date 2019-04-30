@@ -6,7 +6,6 @@ Flatten a potentially composite product into a set of records.
 Adjust the quantity where a secondary uom is given for the root uom
 */
 
-DROP FUNCTION prd.flatten_product (integer, integer);
 CREATE OR REPLACE FUNCTION prd.flatten_product (
   _product_id  integer,
   _root_uom_id integer DEFAULT NULL

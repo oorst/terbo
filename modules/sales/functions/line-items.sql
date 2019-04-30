@@ -1,75 +1,76 @@
-CREATE OR REPLACE FUNCTION sales.line_items(integer, OUT result json) AS
+CREATE OR REPLACE FUNCTION sales.line_items (
+  li_uuid uuid DEFAULT NULL, -- Line item id
+  ooid    integer DEFAULT NULL  -- Order id
+) RETURNS SETOF sales.line_item_t AS
 $$
-BEGIN
-  SELECT json_strip_nulls(json_agg(r)) INTO result
-  FROM (
+BEGIN  
+  RETURN QUERY
+  WITH line_item AS (
     SELECT
-      li.line_item_id,
-      li.order_id,
-      li.product_id,
-      li.line_position,
-      pv.code AS product_code,
-      pv.name AS product_name,
-      pv.short_desc AS product_short_desc,
-      pv.uom_name,
-      pv.uom_abbr,
-      li.code,
-      li.name,
-      li.short_desc,
-      gr.gross,
-      gr.total_gross,
-      net.price,
-      net.total_price,
-      li.discount,
-      li.uom_id,
-      li.quantity,
-      li.tax,
-      li.note,
-      li.created,
-      li.end_at
+      li.*
+    FROM sales.line_item li
+    WHERE li.order_id = $2 OR li.line_item_id = $1;
+  ), _order AS (
+    SELECT
+      *
     FROM sales.order o
-    INNER JOIN sales.line_item li
-      USING (order_id)
-    LEFT JOIN prd.product_v pv
-      USING (product_id)
-    LEFT JOIN prd.price(product_id) pr
-      ON pr.product_id = li.product_id
-    LEFT JOIN LATERAL (
-      SELECT
-        li.line_item_id, 
-        CASE
-          WHEN li.gross IS NOT NULL THEN li.gross
-          ELSE pr.gross
-        END AS gross,
-        CASE
-          WHEN li.total_gross IS NOT NULL THEN li.total_gross
-          WHEN li.gross IS NOT NULL THEN (li.gross * li.quantity)::numeric(10,2)
-          ELSE (pr.gross * li.quantity)::numeric(10,2)
-        END AS total_gross
-    ) gr ON gr.line_item_id = li.line_item_id
-    LEFT JOIN LATERAL (
-      SELECT
-        li.line_item_id, 
-        CASE
-          WHEN li.price IS NOT NULL THEN li.price
-          ELSE pr.price
-        END AS price,
-        CASE
-          WHEN li.total_price IS NOT NULL THEN li.total_price
-          ELSE (gr.total_gross * 1.1)::numeric(10,2)
-        END AS total_price
-    ) net ON net.line_item_id = li.line_item_id
-    WHERE o.order_id = $1
-    ORDER BY li.line_position, li.created
-  ) r;
+    WHERE o.order_id = $2 OR o.order_id = (
+      SELECT li.order_id FROM line_item
+    )
+  ), 
+  SELECT
+    li.line_item_uuid,
+    li.order_id,
+    li.product_id,
+    li.line_position,
+    pv.code,
+    pv.sku,
+    pv.name,
+    pv.short_desc,
+    NULL::numeric(5,2),
+    NULL::numeric(10,2), -- line_gross
+    pr.gross, -- product_gross
+    NULL::numeric(10,2), -- line_price
+    pr.price, -- product_price
+    (pr.gross * li.quantity)::numeric(10,2), --total_gross
+    (pr.price * li.quantity)::numeric(10,2), --total_price
+    NULL::integer, -- uom_id
+    pv.uom_name,
+    pv.uom_abbr,
+    li.quantity,
+    pr.tax_excluded,
+    NULL::integer, -- delivery_id
+    NULL::public.note[], -- notes
+    li.created::timestamptz,
+    li.modified::timestamptz
+  FROM line_item li
+  LEFT JOIN _order o
+    ON o.
+  LEFT JOIN prd.product_v pv
+    USING (product_id)
+  LEFT JOIN sales.product_price(
+    li.product_id,
+    CASE
+      WHEN sales.line_items.status != 'PENDING' THEN
+        sales.line_item.status_changed
+  ) pr ON TRUE
+  WHERE li.line_item_uuid = li_uuid OR li.order_id = ooid;
 END
 $$
 LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION sales.line_items(json, OUT result json) AS
+CREATE OR REPLACE FUNCTION sales.line_items (json, OUT result json) AS
 $$
 BEGIN
-  SELECT sales.line_items(($1->>'order_id')::integer) INTO result;
+  IF $1->'line_item_uuid' IS NOT NULL THEN
+    SELECT 
+      json_strip_nulls(to_json(r)) INTO result
+    FROM sales.line_items(li_uuid => ($1->>'line_item_uuid')::integer) r;
+  ELSIF $1->'order_id' IS NOT NULL THEN
+    SELECT INTO result
+      json_strip_nulls(json_agg(r))
+    FROM sales.line_items(ooid => ($1->>'order_id')::integer) r;
+  END IF;
 END
 $$
 LANGUAGE 'plpgsql';

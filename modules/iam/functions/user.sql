@@ -4,9 +4,9 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      p.party_id AS "partyId",
+      p.party_uuid,
       p.name,
-      i.identity_uuid AS "uuid",
+      i.identity_uuid AS uuid,
       i.hash,
       (
         SELECT
@@ -16,9 +16,9 @@ BEGIN
           USING (role_id)
         WHERE ir.identity_uuid = i.identity_uuid
       ) AS roles
-    FROM person p
+    FROM core.person p
     INNER JOIN iam.identity i
-      USING (party_id)
+      ON i.identity_uuid = p.party_uuid
     WHERE p.email = $1->>'email'
   ) r;
 END

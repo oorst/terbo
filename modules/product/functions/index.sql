@@ -5,12 +5,14 @@
 \ir create-product-uom.sql
 \ir create-uom.sql
 \ir delete-product.sql
+\ir flatten-product.sql
 \ir update-product.sql
 \ir components.sql
 \ir get-margins.sql
 \ir get-markups.sql
 \ir get-price.sql
 \ir get-uoms.sql
+\ir list-products.sql
 \ir price.sql
 \ir product.sql
 \ir search.sql

@@ -7,18 +7,21 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      j."purchaseOrderId" AS purchase_order_id,
-      j."productId" AS product_id
-    FROM json_to_record($1) AS j (
-      "purchaseOrderId" integer,
-      "productId"       integer
+      p.purchase_order_id,
+      p.product_id,
+      p.quantity
+    FROM json_to_record($1) AS p (
+      purchase_order_id integer,
+      product_id        integer,
+      quantity          numeric(10,3)
     )
   ),
   -- Insert into line_item
   line_item AS (
     INSERT INTO pcm.line_item (
       purchase_order_id,
-      product_id
+      product_id,
+      quanity
     )
     SELECT
       *

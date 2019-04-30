@@ -1,156 +1,264 @@
-CREATE TYPE document_status_t AS ENUM ('DRAFT', 'ISSUED', 'DELETED', 'VOID');
-CREATE TYPE order_status_t AS ENUM ('PENDING', 'CONFIRMED', 'IN_PROGRESS', 'FULFILLED', 'DELIVERED');
-CREATE TYPE payment_status_t AS ENUM ('OWING', 'PAID');
-CREATE TYPE li_note_importance_t AS ENUM ('NORMAL', 'IMPORTANT');
+/*
+ * SALES
+ *
+ * Prerequisites: Product
+ *
+ */
 
-CREATE SCHEMA sales
-  CREATE TABLE sales.order (
-    order_id            serial PRIMARY KEY,
-    buyer_id            integer REFERENCES party (party_id) ON DELETE SET NULL,
-    status              order_status_t DEFAULT 'PENDING',
-    short_desc          text,
-    data                jsonb,
-    notes               text,
-    memo                text,
-    purchase_order_num  text,
-    created             timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by          integer REFERENCES person (party_id) NOT NULL,
-    modified            timestamp DEFAULT CURRENT_TIMESTAMP
-  )
+-- Enables creation of uuids
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-  CREATE TABLE invoice (
-    invoice_id      serial PRIMARY KEY,
-    invoice_num     text,
-    order_id        integer REFERENCES sales.order (order_id) ON DELETE RESTRICT,
-    recipient_id    integer REFERENCES party (party_id) ON DELETE RESTRICT,
-    contact_id      integer REFERENCES person (party_id) ON DELETE SET NULL,
-    period          integer NOT NULL DEFAULT 30,
-    due_date        timestamp,
-    status          document_status_t DEFAULT 'DRAFT',
-    payment_status  payment_status_t DEFAULT 'OWING',
-    short_desc      text,
-    notes           text,
-    data            jsonb,
-    issued_at       timestamp,
-    created         timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by      integer REFERENCES person (party_id) NOT NULL,
-    modified        timestamp
-  )
+CREATE SCHEMA sales;
 
-  CREATE TABLE invoice_memo (
-    memo_id    serial PRIMARY KEY,
-    invoice_id integer REFERENCES invoice (invoice_id) ON DELETE CASCADE,
-    body       text,
-    created    timestamp DEFAULT CURRENT_TIMESTAMP
-  )
+CREATE TYPE sales.document_status_t AS ENUM ('DRAFT', 'ISSUED', 'DELETED', 'VOID');
+CREATE TYPE sales.payment_status_t AS ENUM ('OWING', 'PAID');
 
-  -- Partial Invoice links invoices where a partial payment or deposit is made
-  CREATE TABLE partial_invoice (
-    parent_id  integer REFERENCES invoice (invoice_id) ON DELETE CASCADE,
-    invoice_id integer REFERENCES invoice (invoice_id) ON DELETE CASCADE,
-    PRIMARY KEY (parent_id, invoice_id)
-  )
+CREATE TYPE sales.order_status_t AS ENUM ('PENDING', 'CONFIRMED', 'IN_PROGRESS', 'FULFILLED', 'DELIVERED');
+CREATE TYPE sales.line_item_t AS (
+  line_item_uuid  uuid,
+  order_id        integer,
+  product_id      integer,
+  line_position   smallint,
+  code            text,
+  sku             text,
+  name            text,
+  short_desc      text,
+  discount        numeric(5,2),
+  line_item_gross numeric(10,2),  -- User defined gross of the line
+  product_gross   numeric(10,2),
+  line_item_price numeric(10,2),  -- User defined price of the line
+  product_price   numeric(10,2),
+  line_gross      numeric(10,2),  -- Computed gross of the line
+  line_price      numeric(10,2),  -- Computed price of the line
+  uom_id          integer,
+  uom_name        text,
+  uom_abbr        text,
+  quantity        numeric(10,3),
+  tax_excluded    boolean,
+  delivery_id     integer,
+  notes           core.note[],
+  created         timestamptz,
+  modified        timestamptz
+);
 
-  CREATE TABLE quote (
-    quote_id    serial PRIMARY KEY,
-    order_id    integer REFERENCES sales.order (order_id) ON DELETE CASCADE,
-    period      smallint NOT NULL DEFAULT 30,
-    expiry_date date,
-    contact_id  integer REFERENCES person (party_id),
-    notes       text,
-    status      document_status_t DEFAULT 'DRAFT',
-    data        jsonb,
-    issued_at   timestamp,
-    created     timestamp DEFAULT CURRENT_TIMESTAMP,
-    created_by  integer REFERENCES person (party_id),
-    modified    timestamp,
-    CONSTRAINT valid_period CHECK(period >= 0)
-  )
 
-  CREATE TABLE payment (
-    payment_id serial PRIMARY KEY,
-    invoice_id integer REFERENCES invoice (invoice_id),
-    ref_num    text,
-    paid_at    timestamptz DEFAULT CURRENT_TIMESTAMP,
-    amount     numeric(10,2),
-    created    timestamptz DEFAULT CURRENT_TIMESTAMP
-  )
+CREATE TABLE sales.order (
+  order_uuid          uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  buyer_id            uuid REFERENCES core.party (party_uuid) ON DELETE SET NULL,
+  status              sales.order_status_t DEFAULT 'PENDING',
+  status_changed      timestamptz,
+  short_desc          text,
+  data                jsonb,
+  created             timestamptz DEFAULT CURRENT_TIMESTAMP,
+  created_by          uuid REFERENCES core.person (party_uuid) NOT NULL,
+  modified            timestamptz DEFAULT CURRENT_TIMESTAMP
+);
 
-  CREATE TABLE line_item (
-    line_item_id        serial PRIMARY KEY,
-    order_id            integer REFERENCES sales.order (order_id) ON DELETE CASCADE,
-    product_id          integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
-    -- The order in which the line items appear in a document
-    line_position       smallint,
-    code                text,
-    name                text,
-    short_desc          text,
-    data                jsonb,
-    -- Percentage discount
-    discount       numeric(5,2),
-    -- Dollar amount discount
-    line_discount_amount numeric(10,2),
-    -- Gross price charged
-    gross               numeric(10,2),
-    price               numeric(10,2),
-    total_gross         numeric(10,2),
-    total_price         numeric(10,2),
-    uom_id              integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
-    quantity            numeric(10,3),
-    tax                 boolean DEFAULT TRUE,
-    delivery_address_id integer REFERENCES address (address_id),
-    note                text,
-    note_importance     li_note_importance_t DEFAULT 'NORMAL',
-    created             timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified            timestamp,
-    end_at              timestamp
-  )
+CREATE TABLE sales.invoice (
+  invoice_uuid    uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  invoice_num     text,
+  order_uuid      uuid REFERENCES sales.order (order_uuid) ON DELETE RESTRICT,
+  recipient_id    uuid REFERENCES core.party (party_uuid) ON DELETE RESTRICT,
+  contact_id      uuid REFERENCES core.person (party_uuid) ON DELETE SET NULL,
+  period          integer NOT NULL DEFAULT 30,
+  due_date        timestamp,
+  status          sales.document_status_t DEFAULT 'DRAFT',
+  payment_status  sales.payment_status_t DEFAULT 'OWING',
+  short_desc      text,
+  notes           text,
+  data            jsonb,
+  issued_at       timestamp,
+  created         timestamp DEFAULT CURRENT_TIMESTAMP,
+  created_by      uuid REFERENCES core.person (party_uuid) NOT NULL,
+  modified        timestamp
+);
 
-  CREATE OR REPLACE VIEW sales.line_item_v AS
-    SELECT
-      li.line_item_id,
-      li.product_id,
-      li.quantity,
-      li.line_position,
-      coalesce(li.name, p.name) AS name,
-      p.code,
-      p.sku,
-      p.supplier_code,
-      p.manufacturer_code,
-      pu.gross,
-      pu.weight,
-      uom.name AS uom_name,
-      uom.abbr AS uom_abbr,
-      CASE
-        WHEN li.line_total_gross IS NOT NULL THEN
-          li.line_total_gross
-        WHEN li.line_gross IS NOT NULL THEN
-          (li.line_gross * li.quantity)::numeric(10,2)
-        ELSE (pu.gross * li.quantity)::numeric(10,2)
-      END AS total_gross
-    FROM sales.line_item li
-    LEFT JOIN prd.product p
-      USING (product_id)
-    LEFT JOIN prd.product_uom(li.product_id, li.uom_id) pu
-      ON pu.product_id = li.product_id AND pu.uom_id = li.uom_id
-    LEFT JOIN prd.uom uom
-      ON uom.uom_id = li.uom_id
-    WHERE li.end_at IS NULL OR li.end_at > CURRENT_TIMESTAMP;
+-- Partial Invoice links invoices where a partial payment or deposit is made
+CREATE TABLE sales.partial_invoice (
+  parent_uuid  uuid REFERENCES sales.invoice (invoice_uuid) ON DELETE CASCADE,
+  invoice_uuid uuid REFERENCES sales.invoice (invoice_uuid) ON DELETE CASCADE,
+  PRIMARY KEY (parent_uuid, invoice_uuid)
+);
 
-  CREATE OR REPLACE VIEW sales.overdue_invoice_v AS
-    SELECT
-      i.invoice_id
-    FROM sales.invoice i
-    WHERE i.due_date < CURRENT_TIMESTAMP AND i.payment_status != 'PAID';
+CREATE TABLE sales.quote (
+  quote_uuid  uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  order_uuid  uuid REFERENCES sales.order (order_uuid) ON DELETE CASCADE,
+  period      smallint NOT NULL DEFAULT 30,
+  expiry_date date,
+  contact_id  uuid REFERENCES core.person (party_uuid),
+  notes       text,
+  status      sales.document_status_t DEFAULT 'DRAFT',
+  data        jsonb,
+  issued_at   timestamp,
+  created     timestamp DEFAULT CURRENT_TIMESTAMP,
+  created_by  uuid REFERENCES core.person (party_uuid),
+  modified    timestamp,
+  CONSTRAINT valid_period CHECK(period >= 0)
+);
+
+CREATE TABLE sales.payment (
+  payment_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  invoice_uuid uuid REFERENCES sales.invoice (invoice_uuid),
+  ref_num      text,
+  paid_at      timestamptz DEFAULT CURRENT_TIMESTAMP,
+  amount       numeric(10,2),
+  created      timestamptz DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sales.line_item (
+  line_item_uuid      uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  order_uuid          uuid REFERENCES sales.order (order_uuid) ON DELETE CASCADE,
+  product_uuid        uuid REFERENCES prd.product (product_uuid) ON DELETE RESTRICT,
+  line_position       smallint,
+  name                text,
+  short_desc          text,
+  gross               numeric(10,2),
+  price               numeric(10,2),
+  uom_id              integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
+  quantity            numeric(10,3),
+  tax                 boolean DEFAULT TRUE,
+  created             timestamptz DEFAULT CURRENT_TIMESTAMP,
+  modified            timestamptz,
+  end_at              timestamptz
+);
+
+CREATE TABLE sales.credit_item (
+  credit_item_id      uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  order_uuid          uuid REFERENCES sales.order (order_uuid) ON DELETE CASCADE,
+  line_position       smallint,
+  short_desc          text,
+  amount              numeric(10,2),
+  created             timestamptz DEFAULT CURRENT_TIMESTAMP,
+  modified            timestamptz,
+  end_at              timestamptz
+);
+
+CREATE TABLE sales.margin (
+  margin_id serial PRIMARY KEY,
+  name      text,
+  amount    numeric(4,3),
+  created   timestamptz DEFAULT CURRENT_TIMESTAMP,
+  end_at    timestamptz,
+  CONSTRAINT amount_value CHECK(amount > 0 AND amount < 1)
+);
+
+CREATE TABLE sales.markup (
+  markup_id serial PRIMARY KEY,
+  name      text,
+  amount    numeric(10,2),
+  created   timestamptz DEFAULT CURRENT_TIMESTAMP,
+  end_at    timestamptz
+);
+
+CREATE TABLE sales.price (
+  price_uuid       uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  cost             numeric(10,2),
+  gross            numeric(10,2),
+  price            numeric(10,2),
+  margin           numeric(4,3),
+  margin_id        integer REFERENCES sales.margin (margin_id) ON DELETE SET NULL,
+  markup           numeric(10,2),
+  markup_id        integer REFERENCES sales.markup (markup_id) ON DELETE SET NULL,
+  tax_excluded     boolean DEFAULT FALSE,
+  note             uuid REFERENCES core.note (note_uuid),
+  created          timestamptz DEFAULT NOW(),
+  end_at           timestamptz,
+  CONSTRAINT margin_value CHECK(margin > 0 AND margin < 1)
+);
+
+CREATE TABLE sales.discount (
+  discount_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  percent       numeric(5,2),
+  amount        numeric(10,2),
+  created       timestamptz DEFAULT NOW(),
+  modified      timestamptz,
+  end_at        timestamptz
+);
+
+CREATE TABLE sales.tax (
+  tax_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name     text,
+  percent  numeric(5,2),
+  created  timestamptz DEFAULT NOW(),
+  modified timestamptz,
+  end_at   timestamptz
+);
 
 --
--- Triggers
+-- Associative Tables
 --
-CREATE TRIGGER sales_update_order_tg BEFORE UPDATE ON sales.order
-      FOR EACH ROW EXECUTE PROCEDURE sales.update_order_tg();
 
-CREATE TRIGGER sales_update_line_item_tg BEFORE UPDATE ON sales.line_item
-      FOR EACH ROW EXECUTE PROCEDURE sales.update_line_item_tg();
+-- Pricing can be applied at the product, line item or order level so
+-- associations are required for each.
+CREATE TABLE sales.product_price (
+  product_uuid uuid REFERENCES prd.product (product_uuid) ON DELETE CASCADE,
+  price_uuid   uuid REFERENCES sales.price (price_uuid) ON DELETE CASCADE,
+  PRIMARY KEY (product_uuid, price_uuid)
+);
 
-CREATE TRIGGER sales_delete_order_tg BEFORE DELETE ON sales.order
-      FOR EACH ROW EXECUTE PROCEDURE sales.delete_order_tg();
+CREATE TABLE sales.line_item_price (
+  line_item_uuid uuid REFERENCES sales.line_item (line_item_uuid) ON DELETE CASCADE,
+  price_uuid     uuid REFERENCES sales.price (price_uuid) ON DELETE CASCADE,
+  PRIMARY KEY (line_item_uuid, price_uuid)
+);
+
+CREATE TABLE sales.order_price (
+  order_uuid uuid REFERENCES sales.order (order_uuid) ON DELETE CASCADE,
+  price_uuid uuid REFERENCES sales.price (price_uuid) ON DELETE CASCADE,
+  PRIMARY KEY (order_uuid, price_uuid)
+);
+  
+-- Discounts can be applied at the product, line item or order level so
+-- associations are required for each.
+CREATE TABLE sales.product_discount (
+  product_uuid  uuid REFERENCES prd.product (product_uuid) ON DELETE CASCADE,
+  discount_uuid uuid REFERENCES sales.discount (discount_uuid) ON DELETE CASCADE,
+  PRIMARY KEY (product_uuid, discount_uuid)
+);
+
+CREATE TABLE sales.line_item_discount (
+  line_item_uuid  uuid REFERENCES sales.line_item (line_item_uuid) ON DELETE CASCADE,
+  discount_uuid   uuid REFERENCES sales.discount (discount_uuid) ON DELETE CASCADE,
+  PRIMARY KEY (line_item_uuid, discount_uuid)
+);
+
+CREATE TABLE sales.order_discount (
+  order_uuid    uuid REFERENCES sales.order (order_uuid) ON DELETE CASCADE,
+  discount_uuid uuid REFERENCES sales.discount (discount_uuid) ON DELETE CASCADE,
+  PRIMARY KEY (order_uuid, discount_uuid)
+);
+
+CREATE TABLE sales.line_item_note (
+  line_item_uuid uuid REFERENCES sales.line_item (line_item_uuid) ON DELETE CASCADE,
+  note_uuid      uuid REFERENCES core.note (note_uuid) ON DELETE CASCADE
+);
+
+CREATE TABLE sales.order_note (
+  order_uuid uuid REFERENCES sales.order (order_uuid) ON DELETE CASCADE,
+  note_uuid  uuid REFERENCES core.note (note_uuid) ON DELETE CASCADE
+);
+
+--
+-- Views
+--
+
+CREATE OR REPLACE VIEW sales.price_v AS
+  SELECT
+    pr.price_uuid,
+    pr.gross,
+    pr.price,
+    COALESCE(pr.margin, mg.amount) AS margin,
+    COALESCE(pr.markup, mk.amount) AS markup,
+    pr.created,
+    pr.end_at
+  FROM sales.price pr
+  LEFT JOIN sales.margin mg
+    ON mg.margin_id = pr.margin_id
+  LEFT JOIN sales.markup mk
+    ON mk.markup_id = pr.markup_id;
+
+CREATE OR REPLACE VIEW sales.overdue_invoice_v AS
+  SELECT
+    i.invoice_uuid
+  FROM sales.invoice i
+  WHERE i.due_date < CURRENT_TIMESTAMP AND i.payment_status != 'PAID';

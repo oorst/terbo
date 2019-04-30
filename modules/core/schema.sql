@@ -1,25 +1,30 @@
-CREATE TYPE party_t AS ENUM ('PERSON', 'ORGANISATION');
+-- Enables creation of uuids
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE SCHEMA core;
+
+CREATE TYPE core.party_t AS ENUM ('PERSON', 'ORGANISATION');
 
 --
 -- Tables
 --
-CREATE TABLE address (
-  address_id serial PRIMARY KEY,
-  addr1 text,
-  addr2 text,
-  town text,
-  state text,
-  code text,
-  country text,
-  type smallint, -- 0: residential, 1: business
-  created timestamp DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE core.address (
+  address_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  addr1        text,
+  addr2        text,
+  town         text,
+  state        text,
+  code         text,
+  country      text,
+  type         smallint, -- 0: residential, 1: business
+  created      timestamptz DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE full_address (
-  address_id    serial PRIMARY KEY,
+CREATE TABLE core.full_address (
+  address_uuid  uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   lot_number    text,
-  road_number1 text,
-  road_number2 text,
+  road_number1  text,
+  road_number2  text,
   road_name     text,
   road_type     text,
   road_suffix   text,
@@ -27,123 +32,125 @@ CREATE TABLE full_address (
   state         text,
   code          text,
   country       text,
-  type smallint, -- 0: residential, 1: business
-  created timestamp(0) DEFAULT CURRENT_TIMESTAMP
+  type          smallint, -- 0: residential, 1: business
+  created timestamptz DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE party (
-  party_id serial PRIMARY KEY,
-  type     party_t
+CREATE TABLE core.party (
+  party_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  type       core.party_t
 );
 
-CREATE TABLE person (
-  party_id           integer REFERENCES party (party_id) PRIMARY KEY,
-  name               text,
-  email              text UNIQUE,
-  mobile             text,
-  phone              text,
-  address_id         integer REFERENCES address (address_id) ON DELETE SET NULL, -- Residential address
-  billing_address_id integer REFERENCES address (address_id) ON DELETE SET NULL, -- Postal address
-  created            timestamp DEFAULT CURRENT_TIMESTAMP,
-  modified           timestamp
+CREATE TABLE core.person (
+  party_uuid           uuid REFERENCES core.party (party_uuid) ON DELETE CASCADE,
+  name                 text,
+  email                text UNIQUE,
+  mobile               text,
+  phone                text,
+  address_uuid         uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL, -- Residential address
+  billing_address_uuid uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL, -- Postal address
+  created              timestamptz DEFAULT CURRENT_TIMESTAMP,
+  modified             timestamptz,
+  PRIMARY KEY (party_uuid)
 );
 
-CREATE TABLE organisation (
-  party_id           integer REFERENCES party (party_id) PRIMARY KEY,
-  name               text,
-  trading_name       text,
-  address_id         integer REFERENCES address (address_id) ON DELETE SET NULL,
-  billing_address_id integer REFERENCES address (address_id) ON DELETE SET NULL,
-  url                text,
-  industry_code      text,
-  data               jsonb,
-  created            timestamp DEFAULT CURRENT_TIMESTAMP,
-  modified           timestamp,
+CREATE TABLE core.organisation (
+  party_uuid           uuid REFERENCES core.party (party_uuid) ON DELETE CASCADE,
+  name                 text,
+  trading_name         text,
+  address_uuid         uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL,
+  billing_address_uuid uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL,
+  url                  text,
+  industry_code        text,
+  data                 jsonb,
+  created              timestamptz DEFAULT CURRENT_TIMESTAMP,
+  modified             timestamptz,
+  PRIMARY KEY (party_uuid),
   CONSTRAINT valid_name CHECK(name IS NOT NULL OR trading_name IS NOT NULL)
 );
 
-CREATE TABLE role (
+CREATE TABLE core.role (
   role_id serial PRIMARY KEY,
   name    text
 );
 
-CREATE TABLE relationship (
+CREATE TABLE core.relationship (
   relationship_id serial PRIMARY KEY,
   name            text,
   description     text,
   -- The parties involved in the relationship, the first role should be the
   -- more superior
-  first_role      integer REFERENCES role (role_id) ON DELETE CASCADE,
-  second_role     integer REFERENCES role (role_id) ON DELETE CASCADE,
-  created         timestamp DEFAULT CURRENT_TIMESTAMP
+  first_role      integer REFERENCES core.role (role_id) ON DELETE CASCADE,
+  second_role     integer REFERENCES core.role (role_id) ON DELETE CASCADE,
+  created         timestamptz DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE party_relationship (
-  relationship_id integer REFERENCES relationship (relationship_id) ON DELETE CASCADE,
-  first_party     integer REFERENCES party (party_id) ON DELETE CASCADE,
-  second_party    integer REFERENCES party (party_id) ON DELETE CASCADE,
-  ended           timestamp,
-  created         timestamp DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE core.party_relationship (
+  relationship_id integer REFERENCES core.relationship (relationship_id) ON DELETE CASCADE,
+  first_party     uuid REFERENCES core.party (party_uuid) ON DELETE CASCADE,
+  second_party    uuid REFERENCES core.party (party_uuid) ON DELETE CASCADE,
+  ended           timestamptz,
+  created         timestamptz DEFAULT CURRENT_TIMESTAMP
 );
 
 -- A place to put DB related settings
-CREATE TABLE core_settings (
+CREATE TABLE core.settings (
   name  text,
   value text
 );
 
-CREATE TABLE tag (
-  tag_id serial PRIMARY KEY,
-  name  text UNIQUE
+CREATE TABLE core.note (
+  note_uuid  uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  body       text,
+  public     boolean DEFAULT FALSE,
+  created    timestamptz DEFAULT CURRENT_TIMESTAMP,
+  created_by uuid REFERENCES core.party (party_uuid)
 );
 
-CREATE OR REPLACE VIEW party_v AS
+CREATE TABLE core.tag (
+  tag_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name     text UNIQUE
+);
+
+CREATE OR REPLACE VIEW core.party_v AS
   SELECT
-    party_id,
+    party_uuid,
     type,
     name
-  FROM person
-  INNER JOIN party
-    USING (party_id)
+  FROM core.person
+  INNER JOIN core.party
+    USING (party_uuid)
 
   UNION ALL
 
   SELECT
-    party_id,
+    party_uuid,
     type,
     coalesce(trading_name, name) AS name
-  FROM organisation
-  INNER JOIN party
-    USING (party_id);
+  FROM core.organisation
+  INNER JOIN core.party
+    USING (party_uuid);
 
 --
 -- Triggers
 --
-
-/**
-@triggerFunction
-  @def party_tg()
-  @description
-    insert a new party and assign to partyId of person or organisation
-  @private
-*/
 CREATE OR REPLACE FUNCTION party_tg () RETURNS TRIGGER AS
 $$
 BEGIN
   -- Insert new a party when a person or organisation is created
   WITH new_party AS (
-    INSERT INTO party (type) VALUES (
+    INSERT INTO core.party (type) VALUES (
       CASE
         WHEN TG_TABLE_NAME = 'person' THEN
-          ('PERSON')::party_t
+          ('PERSON')::core.party_t
         ELSE
-          ('ORGANISATION')::party_t
+          ('ORGANISATION')::core.party_t
       END
     )
-    RETURNING party_id
+    RETURNING party_uuid
   )
   SELECT
-    party_id INTO NEW.party_id
+    party_uuid INTO NEW.party_uuid
   FROM new_party;
 
   RETURN NEW;
@@ -151,31 +158,8 @@ END
 $$
 LANGUAGE 'plpgsql';
 
-CREATE TRIGGER person_tg BEFORE INSERT ON person
+CREATE TRIGGER person_tg BEFORE INSERT ON core.person
   FOR EACH ROW EXECUTE PROCEDURE party_tg();
 
-CREATE TRIGGER organisation_tg BEFORE INSERT ON organisation
+CREATE TRIGGER organisation_tg BEFORE INSERT ON core.organisation
   FOR EACH ROW EXECUTE PROCEDURE party_tg();
-
-  /**
-  @triggerFunction
-    @def delete_party_tg()
-    @description
-      delete party records when a person or organisation is deleted
-    @private
-  */
-  CREATE OR REPLACE FUNCTION delete_party_tg () RETURNS TRIGGER AS
-  $$
-  BEGIN
-    DELETE FROM party WHERE party_id = OLD.party_id;
-
-    RETURN OLD;
-  END
-  $$
-  LANGUAGE 'plpgsql';
-
-  CREATE TRIGGER delete_person AFTER DELETE ON person
-    FOR EACH ROW EXECUTE PROCEDURE delete_party_tg();
-
-  CREATE TRIGGER delete_organisation AFTER DELETE ON organisation
-    FOR EACH ROW EXECUTE PROCEDURE delete_party_tg();

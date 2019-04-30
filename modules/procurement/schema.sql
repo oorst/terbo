@@ -25,9 +25,8 @@ CREATE SCHEMA pcm
     line_item_id      serial PRIMARY KEY,
     purchase_order_id integer REFERENCES purchase_order (purchase_order_id) ON DELETE CASCADE,
     product_id        integer REFERENCES prd.product (product_id) ON DELETE RESTRICT,
-    uom_id            integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
     quantity          numeric(10,3),
     created_by        integer REFERENCES person (party_id) ON DELETE SET NULL,
-    created           timestamp DEFAULT CURRENT_TIMESTAMP,
-    modified          timestamp DEFAULT CURRENT_TIMESTAMP
+    created           timestamptz DEFAULT CURRENT_TIMESTAMP,
+    modified          timestamptz DEFAULT CURRENT_TIMESTAMP
   );
