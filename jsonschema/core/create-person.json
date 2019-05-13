@@ -1,23 +1,15 @@
 {
-  "title": "create_person(json)",
-  "description": "expected JSON payload for create_person(json)",
+  "title": "core.create_person(json)",
+  "description": "expected JSON payload for core.create_person(json)",
   "type": "object",
   "properties": {
-    "userId": {
-      "description": "userId of the caller",
-      "type": "integer"
-    },
     "name": {
       "type": "string"
     },
     "email": {
       "type": "string",
       "format": "email"
-    },
-    "type": {
-      "type": "string"
     }
   },
-  "required": ["userId", "name", "email"],
-  "additionalProperties": false
+  "required": ["name", "email"]
 }

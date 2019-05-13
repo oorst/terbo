@@ -41,16 +41,33 @@ CREATE TYPE sales.line_item_t AS (
   modified        timestamptz
 );
 
+CREATE TYPE sales.price_t AS (
+  price_uuid       uuid,
+  gross            numeric(10,2),
+  price            numeric(10,2),
+  margin           numeric(4,3),
+  margin_id        integer,
+  markup           numeric(10,2),
+  markup_id        integer,
+  tax_excluded     boolean,
+  note             uuid,
+  created          timestamptz,
+  end_at           timestamptz,
+  gross_is_set     boolean,
+  price_is_set     boolean
+);
 
 CREATE TABLE sales.order (
   order_uuid          uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  buyer_id            uuid REFERENCES core.party (party_uuid) ON DELETE SET NULL,
+  customer_uuid       uuid REFERENCES core.party (party_uuid) ON DELETE SET NULL,
   status              sales.order_status_t DEFAULT 'PENDING',
   status_changed      timestamptz,
   short_desc          text,
+  nickname            text,
   data                jsonb,
+  tsv                 tsvector,
   created             timestamptz DEFAULT CURRENT_TIMESTAMP,
-  created_by          uuid REFERENCES core.person (party_uuid) NOT NULL,
+  created_by          uuid REFERENCES core.person (party_uuid),
   modified            timestamptz DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -67,6 +84,7 @@ CREATE TABLE sales.invoice (
   short_desc      text,
   notes           text,
   data            jsonb,
+  locale          
   issued_at       timestamp,
   created         timestamp DEFAULT CURRENT_TIMESTAMP,
   created_by      uuid REFERENCES core.person (party_uuid) NOT NULL,
@@ -152,7 +170,6 @@ CREATE TABLE sales.markup (
 
 CREATE TABLE sales.price (
   price_uuid       uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  cost             numeric(10,2),
   gross            numeric(10,2),
   price            numeric(10,2),
   margin           numeric(4,3),
@@ -262,3 +279,28 @@ CREATE OR REPLACE VIEW sales.overdue_invoice_v AS
     i.invoice_uuid
   FROM sales.invoice i
   WHERE i.due_date < CURRENT_TIMESTAMP AND i.payment_status != 'PAID';
+
+--
+-- Triggers
+--
+
+/**
+ * When inserting or updating, generate a text search vector for the order
+ */
+CREATE FUNCTION sales.order_weighted_tsv_trigger() RETURNS trigger AS
+$$
+BEGIN
+  SELECT
+    setweight(to_tsvector('simple', pv.name), 'A') ||
+    setweight(to_tsvector('simple', NEW.order_uuid::text), 'A')
+  INTO
+    NEW.tsv
+  FROM core.party_v pv
+  WHERE pv.party_uuid = NEW.buyer_uuid;
+
+  RETURN new;
+END
+$$ LANGUAGE 'plpgsql';
+
+CREATE TRIGGER sales_order_tsv BEFORE INSERT OR UPDATE ON sales.order
+FOR EACH ROW EXECUTE PROCEDURE sales.order_weighted_tsv_trigger();

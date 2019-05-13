@@ -4,25 +4,18 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      o.order_id,
-      o.buyer_id,
+      o.order_uuid,
+      o.customer_uuid,
       o.status,
       o.data,
-      o.notes,
-      o.purchase_order_num,
       o.short_desc,
       o.created,
-      t.total_gross,
-      t.total_price,
-      t.total_tax_amount,
-      p.name AS buyer_name
+      p.name AS customer_name
     FROM sales.order o
-    LEFT JOIN sales.order_totals(o.order_id) t
-      ON t.order_id = o.order_id
-    LEFT JOIN party_v p
-      ON p.party_id = o.buyer_id
-    WHERE o.order_id = ($1->>'order_id')::integer
+    LEFT JOIN core.party_v p
+      ON p.party_uuid = o.customer_uuid
+    WHERE o.order_uuid = ($1->>'order_uuid')::uuid
   ) r;
 END
 $$
-LANGUAGE 'plpgsql';
+LANGUAGE 'plpgsql' SECURITY DEFINER;

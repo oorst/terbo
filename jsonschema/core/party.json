@@ -1,0 +1,11 @@
+{
+  "title": "core.party(json)",
+  "description": "expected JSON payload for core.party(json)",
+  "type": "object",
+  "properties": {
+    "party_uuid": {
+      "type": "string"
+    }
+  },
+  "required": ["party_uuid"]
+}

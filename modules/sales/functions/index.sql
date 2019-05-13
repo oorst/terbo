@@ -1,9 +1,11 @@
 \ir create-line-item.sql
 \ir create-order.sql
+\ir create-price.sql
 \ir create-quote.sql
 \ir delete-order.sql
 \ir get-quote.sql
 \ir get-invoice.sql
+\ir line-items.sql
 \ir list-invoices.sql
 \ir list-orders.sql
 \ir list-quotes.sql
@@ -11,6 +13,7 @@
 \ir markups.sql
 \ir issue-quote.sql
 \ir order.sql
+\ir price.sql
 \ir quote.sql
 \ir remove-line-item.sql
 \ir update-invoice.sql

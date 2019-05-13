@@ -1,40 +1,16 @@
 {
-  "title": "prd.create_price(json)",
-  "description": "expected JSON payload for prd.create_price(json)",
+  "title": "prd.create_cost(json)",
+  "description": "expected JSON payload for prd.create_cost(json)",
   "type": "object",
   "properties": {
-    "productId": {
-      "type": "integer",
-      "description": "product_id of the product"
+    "product_uuid": {
+      "type": "string",
+      "description": "product_uuid of the product"
     },
-    "cost": {
-      "type": ["number", "null"]
-    },
-    "costUomId": {
-      "type": "integer"
-    },
-    "gross": {
-      "type": ["number", "null"]
-    },
-    "marginId": {
-      "type": ["integer", "null"]
-    },
-    "margin": {
-      "type": ["number", "null"],
-      "exclusiveMinimum": 0,
-      "exclusiveMaximum": 1
-    },
-    "markupId": {
-      "type": ["integer", "null"]
-    },
-    "markup": {
-      "type": ["number", "null"],
-      "exclusiveMinimum": 0
-    },
-    "tax": {
-      "type": "boolean"
+    "amount": {
+      "type": "number"
     }
   },
-  "required": ["productId"],
+  "required": ["product_uuid", "amount"],
   "additionalProperties": false
 }

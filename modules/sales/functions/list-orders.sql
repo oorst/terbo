@@ -5,40 +5,35 @@ BEGIN
     SELECT json_strip_nulls(json_agg(r)) INTO result
     FROM (
       SELECT
-        o.order_id AS "orderId",
+        o.order_uuid,
         o.status,
         o.nickname,
-        o.short_desc AS "shortDescription",
-        o.buyer_id AS "buyerId",
-        buyer.name AS "buyerName"
+        o.short_desc,
+        o.buyer_uuid,
+        buyer.name
+        o.created
       FROM sales.order o
-      LEFT JOIN party_v buyer
-        ON buyer.party_id = o.buyer_id
-      ORDER BY o.order_id DESC
+      LEFT JOIN core.party_v buyer
+        ON buyer.party_uuid = o.buyer_uuid
+      ORDER BY o.created DESC
       LIMIT 20
     ) r;
   ELSE
     SELECT json_strip_nulls(json_agg(r)) INTO result
     FROM (
       SELECT
-        o.order_id AS "orderId",
+        o.order_uuid,
         o.status,
         o.nickname,
-        o.short_desc AS "shortDescription",
-        buyer.name AS "buyerName"
+        o.short_desc,
+        o.buyer_uuid,
+        buyer.name,
+        o.created
       FROM sales.order o
-      INNER JOIN party_v buyer
-        ON buyer.party_id = o.buyer_id
-      WHERE to_tsvector(
-        concat_ws(' ',
-          buyer.name
-        )
-      ) @@ plainto_tsquery(
-        concat_ws(' ',
-          $1->>'search'
-        )
-      )
-      ORDER BY o.order_id DESC
+      INNER JOIN core.party_v buyer
+        ON buyer.party_uuid = o.buyer_uuid
+      WHERE o.tsv @@ to_tsquery(($1->>'search') || ':*')
+      ORDER BY o.created DESC
     ) r;
   END IF;
 END

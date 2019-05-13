@@ -3,15 +3,15 @@ $$
 BEGIN
   WITH payload AS (
     SELECT
-      p."ownerId" AS owner_id,
+      p.owner_uuid,
       p.name,
       p.template,
-      p."userId" AS created_by
+      p.user_uuid AS created_by
     FROM json_to_record($1) AS p (
-      "ownerId" integer,
-      "userId"  integer,
-      name      text,
-      template  boolean
+      owner_uuid uuid,
+      user_uuid  uuid,
+      name       text,
+      template   boolean
     )
   ), job AS (
     INSERT INTO prj.job (
@@ -28,21 +28,21 @@ BEGIN
       p.name,
       p.created_by
     FROM payload p
-    RETURNING job_id, name
+    RETURNING job_uuid, name
   ), project AS (
     INSERT INTO prj.project (
-      owner_id,
-      job_id
+      owner_uuid,
+      job_uuid
     ) VALUES (
-      (SELECT owner_id FROM payload),
-      (SELECT job_id FROM job)
+      (SELECT owner_uuid FROM payload),
+      (SELECT job_uuid FROM job)
     )
     RETURNING *
   )
   SELECT to_json(r) INTO result
   FROM (
     SELECT
-      p.project_id AS "projectId",
+      p.project_uuid,
       (SELECT name FROM job)
     FROM project p
   ) r;

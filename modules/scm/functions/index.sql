@@ -1,27 +1,14 @@
 \echo 'Creating SCM functions'
-\ir add-task.sql
-\ir create-component.sql
 \ir create-item.sql
 \ir create-task.sql
 \ir create-route.sql
-\ir delete-component.sql
 \ir delete-item.sql
 \ir delete-route.sql
-\ir get-components.sql
-\ir get-item.sql
-\ir get-route.sql
-\ir get-task.sql
 \ir flatten-item.sql
-\ir json-to-boq.sql
-\ir json-to-item-boq.sql
-\ir insert-item.sql
 \ir item-boq.sql
 \ir item.sql
 \ir route.sql
 \ir update-item.sql
 \ir update-route.sql
-\ir item-boq.sql
 \ir list-items.sql
 \ir list-routes.sql
-\ir update-component.sql
-\ir get-line-item.sql

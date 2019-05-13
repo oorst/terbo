@@ -1,27 +1,25 @@
-CREATE OR REPLACE FUNCTION get_person (integer, OUT result json) AS
+CREATE OR REPLACE FUNCTION core.person (uuid, OUT result json) AS
 $$
 BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      p.party_id AS "partyId",
+      p.party_uuid,
       p.name,
       p.email,
       p.mobile,
       p.phone,
-      p.address_id AS "addressId",
-      p.billing_address_id AS "billingAddressId",
-      party.type
-    FROM person p
-    INNER JOIN party
-      USING (party_id)
-    WHERE party_id = $1
+      p.address_uuid,
+      p.billing_address_uuid,
+      'PERSON'::core.party_kind_t AS kind
+    FROM core.person p
+    WHERE p.party_uuid = $1
   ) r;
 END
 $$
 LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION get_person (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION core.person (json, OUT result json) AS
 $$
 BEGIN
   IF $1->>'partyId' IS NOT NULL THEN

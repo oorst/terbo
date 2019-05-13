@@ -1,33 +1,33 @@
-CREATE OR REPLACE FUNCTION search_party (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION core.search_party (json, OUT result json) AS
 $$
 BEGIN
   WITH parties AS (
     SELECT
-      party_id,
+      party_uuid,
       name,
       NULL AS trading_name,
       email,
       NULL AS url
-    FROM person
+    FROM core.person
     WHERE to_tsvector(concat_ws(' ', name, email)) @@ to_tsquery(($1->>'search') || ':*')
 
     UNION ALL
 
     SELECT
-      party_id,
+      party_uuid,
       name,
       trading_name,
       NULL AS email,
       url
-    FROM organisation
+    FROM core.organisation
     WHERE to_tsvector(concat_ws(' ', name, trading_name)) @@ to_tsquery(($1->>'search') || ':*')
   )
   SELECT json_strip_nulls(json_agg(r)) INTO result
   FROM (
     SELECT
-      party_id AS "partyId",
+      party_uuid,
       name,
-      trading_name AS "tradingName",
+      trading_name,
       email,
       url
     FROM parties

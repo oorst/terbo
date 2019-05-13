@@ -13,26 +13,20 @@
   @returns {json}
   @api
 */
-CREATE OR REPLACE FUNCTION update_organisation (json, OUT result json) AS
+CREATE OR REPLACE FUNCTION core.update_organisation (json, OUT result json) AS
 $$
 BEGIN
   EXECUTE (
     SELECT
-      format('UPDATE organisation SET (%s) = (%s) WHERE party_id = ''%s''', c.column, c.value, c.party_id)
+      format('UPDATE core.organisation SET (%s) = (%s) WHERE party_uuid = ''%s''', c.column, c.value, c.party_uuid)
     FROM (
       SELECT
         string_agg(q.column, ', ') AS column,
         string_agg(q.value, ', ') AS value,
-        ($1->>'partyId')::integer AS party_id
+        ($1->>'party_uuid')::uuid AS party_uuid
       FROM (
         SELECT
-          CASE p.key
-            WHEN 'tradingName' THEN 'trading_name'
-            WHEN 'addressId' THEN 'address_id'
-            WHEN 'billingAddressId' THEN 'billing_address_id'
-            WHEN 'industryCode' THEN 'industry_code'
-            ELSE p.key
-          END AS column,
+          p.key AS column,
           CASE
             -- check if it's a number
             WHEN p.value ~ '^\d+(.\d+)?$' THEN
@@ -42,12 +36,18 @@ BEGIN
             ELSE quote_literal(p.value)
           END AS value
         FROM json_each_text($1) p
-        WHERE p.key != 'partyId' AND p.key != 'type'
+        WHERE p.key != 'party_uuid' AND p.key != 'type'
       ) q
     ) c
   );
 
-  SELECT format('{ "ok": true, "partyId": %s }', ($1->>'partyId')::integer) INTO result;
+  SELECT json_strip_nulls(to_json(r)) INTO result
+  FROM (
+    SELECT
+      *
+    FROM core.organisation o
+    WHERE o.party_uuid = ($1->>'party_uuid')::uuid
+  ) r;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

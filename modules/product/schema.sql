@@ -9,6 +9,14 @@ CREATE SCHEMA prd;
 
 CREATE TYPE prd.product_t AS ENUM ('PRODUCT', 'SERVICE', 'FAMILY', 'CATEGORY');
 CREATE TYPE prd.rounding_rule_t AS ENUM ('NONE', 'NEAREST_INTEGER', 'ROUND_UP');
+CREATE TYPE prd.cost_t AS (
+  cost_uuid     uuid,
+  product_uuid  uuid,
+  amount        numeric(10,2),
+  amount_is_set boolean,       -- Cost amount has been explicitly defined
+  created       timestamptz,
+  end_at        timestamptz
+);
 
 CREATE TABLE prd.uom (
   uom_id     serial PRIMARY KEY,
@@ -50,6 +58,8 @@ CREATE TABLE prd.cost (
   created      timestamptz DEFAULT CURRENT_TIMESTAMP,
   end_at       timestamptz
 );
+
+CREATE INDEX prd_cost_product_uuid_fkey ON prd.cost (product_uuid);
 
 CREATE TABLE prd.product_attribute (
   attribute_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,

@@ -3,7 +3,7 @@ RETURNS TABLE (
   item_uuid  uuid,
   product_id integer,
   name       text,
-  type       product_t,
+  type       prd.product_t,
   uom_id     integer,
   quantity   numeric(10,3)
 ) AS

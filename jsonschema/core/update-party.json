@@ -1,0 +1,16 @@
+{
+  "title": "core.update_party(json)",
+  "description": "expected JSON payload for core.update_party(json)",
+  "properties": {
+    "party_uuid": {
+      "type": "string"
+    },
+    "name": {
+      "type": ["string", "null"]
+    },
+    "trading_name": {
+      "type": ["string", "null"]
+    }
+  },
+  "required": ["party_uuid"]
+}

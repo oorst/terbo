@@ -3,7 +3,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE SCHEMA core;
 
-CREATE TYPE core.party_t AS ENUM ('PERSON', 'ORGANISATION');
+CREATE TYPE core.party_kind_t AS ENUM ('PERSON', 'ORGANISATION');
 
 --
 -- Tables
@@ -38,7 +38,7 @@ CREATE TABLE core.full_address (
 
 CREATE TABLE core.party (
   party_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  type       core.party_t
+  kind       core.party_kind_t
 );
 
 CREATE TABLE core.person (
@@ -114,21 +114,21 @@ CREATE TABLE core.tag (
 
 CREATE OR REPLACE VIEW core.party_v AS
   SELECT
-    party_uuid,
-    type,
-    name
-  FROM core.person
-  INNER JOIN core.party
+    prsn.party_uuid,
+    p.kind,
+    prsn.name
+  FROM core.person prsn
+  INNER JOIN core.party p
     USING (party_uuid)
 
   UNION ALL
 
   SELECT
-    party_uuid,
-    type,
-    coalesce(trading_name, name) AS name
-  FROM core.organisation
-  INNER JOIN core.party
+    o.party_uuid,
+    p.kind,
+    coalesce(o.trading_name, o.name) AS name
+  FROM core.organisation o
+  INNER JOIN core.party p
     USING (party_uuid);
 
 --
@@ -137,21 +137,17 @@ CREATE OR REPLACE VIEW core.party_v AS
 CREATE OR REPLACE FUNCTION party_tg () RETURNS TRIGGER AS
 $$
 BEGIN
+RAISE NOTICE '%', TG_TABLE_NAME;
   -- Insert new a party when a person or organisation is created
-  WITH new_party AS (
-    INSERT INTO core.party (type) VALUES (
-      CASE
-        WHEN TG_TABLE_NAME = 'person' THEN
-          ('PERSON')::core.party_t
-        ELSE
-          ('ORGANISATION')::core.party_t
-      END
-    )
-    RETURNING party_uuid
+  INSERT INTO core.party (kind) VALUES (
+    CASE
+      WHEN TG_TABLE_NAME = 'person' THEN
+        ('PERSON')::core.party_kind_t
+      ELSE
+        ('ORGANISATION')::core.party_kind_t
+    END
   )
-  SELECT
-    party_uuid INTO NEW.party_uuid
-  FROM new_party;
+  RETURNING party_uuid INTO NEW.party_uuid;
 
   RETURN NEW;
 END
