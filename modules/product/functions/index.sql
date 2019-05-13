@@ -1,5 +1,6 @@
 \ir utils.sql
 \ir cost.sql
+\ir composite-cost.sql
 \ir create-cost.sql
 \ir create-product.sql
 \ir create-uom.sql

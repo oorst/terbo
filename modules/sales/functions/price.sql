@@ -46,6 +46,10 @@ BEGIN
     p.margin_id,
     p.markup,
     p.markup_id,
+    CASE
+      WHEN p.gross IS NOT NULL THEN TRUE
+      ELSE NULL
+    END,
     p.tax_excluded,
     p.created,
     p.end_at
@@ -57,6 +61,7 @@ BEGIN
     result.margin_id,
     result.markup,
     result.markup_id,
+    result.gross_is_set,
     result.tax_excluded,
     result.created,
     result.end_at
@@ -65,12 +70,6 @@ BEGIN
     ON p.price_uuid = pp.price_uuid
   WHERE pp.product_uuid = $1
   ORDER BY pp.product_uuid, p.created DESC;
-  
-  RAISE NOTICE '%', result;
-
-  IF NOT (result IS NULL) THEN
-    result = sales.price(prd.cost($1), result);    
-  END IF;
 
   RETURN result;
 END

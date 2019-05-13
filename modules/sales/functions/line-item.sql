@@ -1,33 +1,17 @@
-CREATE OR REPLACE FUNCTION sales.line_item(integer)
+/**
+ * Create a line_item_t given a product_uuid.
+ * Use this function to populate fields when creating line items for an order
+ * or when checking the price of a product.
+ */
+
+CREATE OR REPLACE FUNCTION sales.line_item_price(uuid, OUT result sales.line_item_t)
 RETURNS TABLE (
-  line_item_id       integer,
-  order_id           integer,
-  product_id         integer,
-  line_position      smallint,
-  sku                text,
-  product_code       text,
-  product_name       text,
-  product_short_desc text,
-  uom_name           text,
-  uom_abbr           text,
-  code               text,
-  name               text,
-  short_desc         text,
-  gross              numeric(10,2),
-  total_gross        numeric(10,2),
-  price              numeric(10,2),
-  total_price        numeric(10,2),
-  discount           numeric(5,2),
-  uom_id             integer,
-  quantity           numeric(10,3),
-  tax                boolean,
-  note               text,
-  created            timestamp,
-  end_at             timestamp
+  product_uuid  uuid,
+  product_gross numeric(10,2),
+  product_price numeric(10,2),
 ) AS
 $$
 BEGIN
-  RETURN QUERY
   SELECT
     li.line_item_id,
     li.order_id,
