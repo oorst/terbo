@@ -61,7 +61,7 @@ BEGIN
       SELECT
         party_uuid,
         name,
-        type
+        kind
       FROM core.party_v
     ) man
       ON man.party_uuid = pr.manufacturer_uuid
@@ -69,7 +69,7 @@ BEGIN
       SELECT
         party_uuid,
         name,
-        type
+        kind
       FROM core.party_v
     ) sup
       ON sup.party_uuid = pr.supplier_uuid

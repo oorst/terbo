@@ -3,15 +3,17 @@
   "description": "expected JSON payload for prd.create_product(json)",
   "type": "object",
   "properties": {
-    "user_id": {
-      "type": "string",
-      "description": "uuid of the caller"
-    },
     "type": {
       "type": "string",
       "enum": ["PRODUCT", "SERVICE"]
     },
     "name": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "sku": {
       "type": "string"
     },
     "short_desc": {
@@ -29,6 +31,5 @@
       "required": ["family_uuid"]
     }
   ],
-  "required": ["type"],
-  "additionalProperties": false
+  "required": ["type"]
 }

@@ -48,9 +48,10 @@ CREATE OR REPLACE FUNCTION prd.cost (json, OUT result json) AS
 $$
 BEGIN
   SELECT
-    json_strip_nulls(to_json(prd.cost(($1->>'product_uuid')::uuid)))
+    json_strip_nulls(to_json(r))
   INTO
-    result;
+    result
+  FROM prd.cost(($1->>'product_uuid')::uuid) r;
 END
 $$
 LANGUAGE 'plpgsql';
