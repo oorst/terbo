@@ -11,6 +11,5 @@
       "type": "number"
     }
   },
-  "required": ["product_uuid", "amount"],
-  "additionalProperties": false
+  "required": ["product_uuid", "amount"]
 }
