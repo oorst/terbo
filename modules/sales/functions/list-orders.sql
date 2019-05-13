@@ -9,12 +9,12 @@ BEGIN
         o.status,
         o.nickname,
         o.short_desc,
-        o.buyer_uuid,
-        buyer.name
+        o.customer_uuid,
+        cst.name,
         o.created
       FROM sales.order o
-      LEFT JOIN core.party_v buyer
-        ON buyer.party_uuid = o.buyer_uuid
+      LEFT JOIN core.party_v cst
+        ON cst.party_uuid = o.customer_uuid
       ORDER BY o.created DESC
       LIMIT 20
     ) r;
@@ -26,12 +26,12 @@ BEGIN
         o.status,
         o.nickname,
         o.short_desc,
-        o.buyer_uuid,
-        buyer.name,
+        o.customer_uuid,
+        cst.name,
         o.created
       FROM sales.order o
-      INNER JOIN core.party_v buyer
-        ON buyer.party_uuid = o.buyer_uuid
+      INNER JOIN core.party_v cst
+        ON cst.party_uuid = o.customer_uuid
       WHERE o.tsv @@ to_tsquery(($1->>'search') || ':*')
       ORDER BY o.created DESC
     ) r;

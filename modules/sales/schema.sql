@@ -59,7 +59,7 @@ CREATE TYPE sales.price_t AS (
 
 CREATE TABLE sales.order (
   order_uuid          uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  customer_uuid       uuid REFERENCES core.party (party_uuid) ON DELETE SET NULL,
+  customer_uuid       uuid REFERENCES core.party (party_uuid) ON DELETE SET RESTRICT,
   status              sales.order_status_t DEFAULT 'PENDING',
   status_changed      timestamptz,
   short_desc          text,
