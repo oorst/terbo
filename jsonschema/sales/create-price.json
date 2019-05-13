@@ -1,0 +1,30 @@
+{
+  "title": "sales.create_price(json)",
+  "description": "expected JSON payload for sales.create_price(json)",
+  "type": "object",
+  "properties": {
+    "product_uuid": {
+      "type": "string",
+      "description": "product_uuid of the product"
+    },
+    "gross": {
+      "type": "number"
+    },
+    "price": {
+      "type": "number"
+    },
+    "margin": {
+      "type": "number"
+    },
+    "margin_id": {
+      "type": "integer"
+    },
+    "markup": {
+      "type": "number"
+    },
+    "markup_id": {
+      "type": "integer"
+    }
+  },
+  "required": ["product_uuid"]
+}
