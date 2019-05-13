@@ -20,7 +20,7 @@ BEGIN
       ON fam.product_uuid = p.family_uuid
     LEFT JOIN prd.uom u
       ON u.uom_id = p.uom_id
-    WHERE p.tsv @@ to_tsquery($1->>'search' || '.*')
+    WHERE p.tsv @@ to_tsquery($1->>'search' || ':*')
     AND ($1->'type' IS NULL OR p.type = ($1->>'type')::prd.product_t)
   ) r;
 END
