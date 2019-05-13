@@ -99,18 +99,18 @@ CREATE TABLE sales.partial_invoice (
 );
 
 CREATE TABLE sales.quote (
-  quote_uuid  uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  order_uuid  uuid REFERENCES sales.order (order_uuid) ON DELETE CASCADE,
-  period      smallint NOT NULL DEFAULT 30,
-  expiry_date date,
-  contact_id  uuid REFERENCES core.person (party_uuid),
-  notes       text,
-  status      sales.document_status_t DEFAULT 'DRAFT',
-  data        jsonb,
-  issued_at   timestamp,
-  created     timestamp DEFAULT CURRENT_TIMESTAMP,
-  created_by  uuid REFERENCES core.person (party_uuid),
-  modified    timestamp,
+  quote_uuid   uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  order_uuid   uuid REFERENCES sales.order (order_uuid) ON DELETE CASCADE,
+  period       smallint NOT NULL DEFAULT 30,
+  expiry_date  date,
+  contact_uuid uuid REFERENCES core.person (party_uuid),
+  notes        text,
+  status       sales.document_status_t DEFAULT 'DRAFT',
+  data         jsonb,
+  issued_at    timestamp,
+  created      timestamp DEFAULT CURRENT_TIMESTAMP,
+  created_by   uuid REFERENCES core.person (party_uuid),
+  modified     timestamp,
   CONSTRAINT valid_period CHECK(period >= 0)
 );
 

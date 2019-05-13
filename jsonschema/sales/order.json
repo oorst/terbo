@@ -1,0 +1,11 @@
+{
+  "title": "core.order",
+  "description": "expected JSON payload for core.order(json)",
+  "type": "object",
+  "properties": {
+    "order_uuid": {
+      "type": "integer"
+    }
+  },
+  "required": ["order_uuid"]
+}
