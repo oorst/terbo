@@ -75,9 +75,8 @@ CREATE TABLE sales.order (
 CREATE TABLE sales.invoice (
   invoice_uuid    uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   invoice_num     text,
-  order_uuid      uuid REFERENCES sales.order (order_uuid) ON DELETE RESTRICT,
   recipient_uuid  uuid REFERENCES core.party (party_uuid) ON DELETE RESTRICT,
-  contact_id      uuid REFERENCES core.person (party_uuid) ON DELETE SET NULL,
+  contact_uuid    uuid REFERENCES core.person (party_uuid) ON DELETE SET NULL,
   period          integer NOT NULL DEFAULT 30,
   due_date        timestamp,
   status          sales.document_status_t DEFAULT 'DRAFT',
