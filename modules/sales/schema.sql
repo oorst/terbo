@@ -16,8 +16,8 @@ CREATE TYPE sales.payment_status_t AS ENUM ('OWING', 'PAID');
 CREATE TYPE sales.order_status_t AS ENUM ('PENDING', 'CONFIRMED', 'IN_PROGRESS', 'FULFILLED', 'DELIVERED');
 CREATE TYPE sales.line_item_t AS (
   line_item_uuid  uuid,
-  order_id        integer,
-  product_id      integer,
+  order_uuid      uuid,
+  product_id      uuid,
   line_position   smallint,
   code            text,
   sku             text,
@@ -36,7 +36,6 @@ CREATE TYPE sales.line_item_t AS (
   quantity        numeric(10,3),
   tax_excluded    boolean,
   delivery_id     integer,
-  notes           core.note[],
   created         timestamptz,
   modified        timestamptz
 );
@@ -132,6 +131,7 @@ CREATE TABLE sales.line_item (
   short_desc          text,
   gross               numeric(10,2),
   price               numeric(10,2),
+  discount            numeric(5,2),
   uom_id              integer REFERENCES prd.uom (uom_id) ON DELETE SET NULL,
   quantity            numeric(10,3),
   tax                 boolean DEFAULT TRUE,
