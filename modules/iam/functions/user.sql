@@ -6,6 +6,7 @@ BEGIN
     SELECT
       p.party_uuid,
       p.name,
+      p.email,
       i.identity_uuid AS uuid,
       i.hash,
       (

@@ -5,7 +5,7 @@ BEGIN
     customer_uuid
   )
   SELECT
-    p.buyer_uuid
+    p.customer_uuid
   FROM json_to_record($1) AS p (
     customer_uuid uuid
   );

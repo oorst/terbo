@@ -2,16 +2,18 @@
   "title": "sales.create_line_item(json)",
   "description": "expected payload for sales.create_line_item(json)",
   "properties": {
-    "order_id": {
-      "type": "integer"
+    "order_uuid": {
+      "type": "string"
     },
-    "product_id": {
-      "type": "integer"
+    "product_uuid": {
+      "type": "string"
     },
     "short_desc": {
       "type": ["string", "null"]
+    },
+    "quantity": {
+      "type": ["number", "null"]
     }
   },
-  "required": ["order_id"],
-  "additionalProperties": false
+  "required": ["order_uuid"]
 }

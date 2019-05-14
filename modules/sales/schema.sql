@@ -287,7 +287,7 @@ CREATE OR REPLACE VIEW sales.overdue_invoice_v AS
 /**
  * When inserting or updating, generate a text search vector for the order
  */
-CREATE FUNCTION sales.order_weighted_tsv_trigger() RETURNS trigger AS
+CREATE OR REPLACE FUNCTION sales.order_weighted_tsv_trigger() RETURNS trigger AS
 $$
 BEGIN
   SELECT
@@ -296,7 +296,7 @@ BEGIN
   INTO
     NEW.tsv
   FROM core.party_v pv
-  WHERE pv.party_uuid = NEW.buyer_uuid;
+  WHERE pv.party_uuid = NEW.customer_uuid;
 
   RETURN new;
 END
