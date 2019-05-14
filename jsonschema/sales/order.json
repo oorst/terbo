@@ -1,10 +1,10 @@
 {
-  "title": "core.order",
-  "description": "expected JSON payload for core.order(json)",
+  "title": "sales.order",
+  "description": "expected JSON payload for sales.order(json)",
   "type": "object",
   "properties": {
     "order_uuid": {
-      "type": "integer"
+      "type": ["string"]
     }
   },
   "required": ["order_uuid"]
