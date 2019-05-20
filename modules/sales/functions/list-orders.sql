@@ -10,10 +10,10 @@ BEGIN
         o.nickname,
         o.short_desc,
         o.customer_uuid,
-        cst.name,
+        cst.name AS customer_name,
         o.created
       FROM sales.order o
-      LEFT JOIN core.party_v cst
+      LEFT JOIN core.party cst
         ON cst.party_uuid = o.customer_uuid
       ORDER BY o.created DESC
       LIMIT 20
@@ -27,10 +27,10 @@ BEGIN
         o.nickname,
         o.short_desc,
         o.customer_uuid,
-        cst.name,
+        cst.name AS customer_name,
         o.created
       FROM sales.order o
-      INNER JOIN core.party_v cst
+      INNER JOIN core.party cst
         ON cst.party_uuid = o.customer_uuid
       WHERE o.tsv @@ to_tsquery(($1->>'search') || ':*')
       ORDER BY o.created DESC

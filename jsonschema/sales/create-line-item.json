@@ -15,5 +15,5 @@
       "type": ["number", "null"]
     }
   },
-  "required": ["order_uuid"]
+  "required": ["order_uuid", "product_uuid"]
 }

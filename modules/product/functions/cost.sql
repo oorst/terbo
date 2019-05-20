@@ -28,12 +28,14 @@ BEGIN
       c.cost_uuid,
       c.amount,
       c.created,
-      c.end_at
+      c.end_at,
+      FALSE
     INTO
       result.cost_uuid,
       result.amount,
       result.created,
-      result.end_at
+      result.end_at,
+      result.amount_is_set
     FROM prd.composite_cost($1) c;
   ELSE
     

@@ -24,9 +24,9 @@ BEGIN
       USING (order_uuid)
     INNER JOIN sales.quote q
       ON q.order_uuid = o.order_uuid
-    LEFT JOIN core.party_v cst
+    LEFT JOIN core.party cst
       ON cst.party_uuid = o.customer_uuid
-    LEFT JOIN core.party_v contact -- Left join as a document may not have a contact
+    LEFT JOIN core.party contact -- Left join as a document may not have a contact
       ON contact.party_uuid = q.contact_uuid
     ORDER BY q.created DESC
   ) r;

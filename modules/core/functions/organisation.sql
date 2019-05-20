@@ -4,14 +4,16 @@ BEGIN
   SELECT json_strip_nulls(to_json(r)) INTO result
   FROM (
     SELECT
-      o.party_uuid,
-      o.name,
+      p.party_uuid,
+      p.name,
       o.trading_name,
       o.url,
-      o.data,
-      'ORGANISATION' AS kind
-    FROM core.organisation o
-    WHERE o.party_uuid = $1
+      p.data,
+      'ORGANISATION'::core.party_kind_t AS kind
+    FROM core.party p
+    INNER JOIN core.organisation o
+      USING (party_uuid)
+    WHERE p.party_uuid = $1
   ) r;
 END
 $$

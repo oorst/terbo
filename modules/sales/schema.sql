@@ -56,21 +56,6 @@ CREATE TYPE sales.price_t AS (
   price_is_set     boolean
 );
 
-CREATE TABLE sales.order (
-  order_uuid          uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  customer_uuid       uuid REFERENCES core.party (party_uuid) ON DELETE SET RESTRICT,
-  invoice_uuid        uuid REFERENCES sales.invoice (invoice_uuid) ON DELETE RESTRICT,
-  status              sales.order_status_t DEFAULT 'PENDING',
-  status_changed      timestamptz,
-  short_desc          text,
-  nickname            text,
-  data                jsonb,
-  tsv                 tsvector,
-  created             timestamptz DEFAULT CURRENT_TIMESTAMP,
-  created_by          uuid REFERENCES core.person (party_uuid),
-  modified            timestamptz DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE sales.invoice (
   invoice_uuid    uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   invoice_num     text,
@@ -83,11 +68,25 @@ CREATE TABLE sales.invoice (
   short_desc      text,
   notes           text,
   data            jsonb,
-  locale          
   issued_at       timestamp,
   created         timestamp DEFAULT CURRENT_TIMESTAMP,
   created_by      uuid REFERENCES core.person (party_uuid) NOT NULL,
   modified        timestamp
+);
+
+CREATE TABLE sales.order (
+  order_uuid          uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  customer_uuid       uuid REFERENCES core.party (party_uuid) ON DELETE RESTRICT,
+  invoice_uuid        uuid REFERENCES sales.invoice (invoice_uuid) ON DELETE RESTRICT,
+  status              sales.order_status_t DEFAULT 'PENDING',
+  status_changed      timestamptz,
+  short_desc          text,
+  nickname            text,
+  data                jsonb,
+  tsv                 tsvector,
+  created             timestamptz DEFAULT CURRENT_TIMESTAMP,
+  created_by          uuid REFERENCES core.person (party_uuid),
+  modified            timestamptz DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Partial Invoice links invoices where a partial payment or deposit is made
@@ -295,7 +294,7 @@ BEGIN
     setweight(to_tsvector('simple', NEW.order_uuid::text), 'A')
   INTO
     NEW.tsv
-  FROM core.party_v pv
+  FROM core.party pv
   WHERE pv.party_uuid = NEW.customer_uuid;
 
   RETURN new;

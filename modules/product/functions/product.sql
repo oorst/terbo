@@ -62,7 +62,7 @@ BEGIN
         party_uuid,
         name,
         kind
-      FROM core.party_v
+      FROM core.party
     ) man
       ON man.party_uuid = pr.manufacturer_uuid
     LEFT JOIN (
@@ -70,7 +70,7 @@ BEGIN
         party_uuid,
         name,
         kind
-      FROM core.party_v
+      FROM core.party
     ) sup
       ON sup.party_uuid = pr.supplier_uuid
     WHERE pr.product_uuid = $1

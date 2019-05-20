@@ -5,6 +5,7 @@
 \ir delete-order.sql
 \ir get-quote.sql
 \ir get-invoice.sql
+\ir line-item.sql
 \ir line-items.sql
 \ir list-invoices.sql
 \ir list-orders.sql
@@ -14,6 +15,7 @@
 \ir issue-quote.sql
 \ir order.sql
 \ir price.sql
+\ir product-price.sql
 \ir quote.sql
 \ir remove-line-item.sql
 \ir update-invoice.sql

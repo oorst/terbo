@@ -2,8 +2,8 @@
   "title": "sales.update_order_line_item(json)",
   "description": "expected payload for sales.update_order_line_item(json)",
   "properties": {
-    "line_item_id": {
-      "type": "integer"
+    "line_item_uuid": {
+      "type": "string"
     },
     "quantity": {
       "type": ["number", "null"]
@@ -24,6 +24,5 @@
       "type": ["string", "null"]
     }
   },
-  "required": ["line_item_id"],
-  "additionalProperties": false
+  "required": ["line_item_uuid"]
 }

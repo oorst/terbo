@@ -6,7 +6,7 @@ BEGIN
     SELECT
       p.party_uuid,
       p.name,
-      p.email,
+      prsn.email,
       i.identity_uuid AS uuid,
       i.hash,
       (
@@ -17,10 +17,12 @@ BEGIN
           USING (role_id)
         WHERE ir.identity_uuid = i.identity_uuid
       ) AS roles
-    FROM core.person p
+    FROM core.party p
+    INNER JOIN core.person prsn
+      USING (party_uuid)
     INNER JOIN iam.identity i
       ON i.identity_uuid = p.party_uuid
-    WHERE p.email = $1->>'email'
+    WHERE prsn.email = $1->>'email'
   ) r;
 END
 $$

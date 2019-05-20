@@ -3,8 +3,7 @@
   "description": "expected JSON payload for prd.create_product(json)",
   "type": "object",
   "properties": {
-    "type": {
-      "type": "string",
+    "kind": {
       "enum": ["PRODUCT", "SERVICE"]
     },
     "name": {
@@ -31,5 +30,5 @@
       "required": ["family_uuid"]
     }
   ],
-  "required": ["type"]
+  "required": ["kind"]
 }

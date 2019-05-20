@@ -3,12 +3,12 @@ $$
 BEGIN
   EXECUTE (
     SELECT
-      format('UPDATE sales.line_item SET (%s) = (%s) WHERE line_item_id = ''%s''', c.column, c.value, c.line_item_id)
+      format('UPDATE sales.line_item SET (%s) = (%s) WHERE line_item_uuid = ''%s''', c.column, c.value, c.line_item_uuid)
     FROM (
       SELECT
         string_agg(q.column, ', ') AS column,
         string_agg(q.value, ', ') AS value,
-        ($1->>'line_item_id')::integer AS line_item_id
+        ($1->>'line_item_uuid')::uuid AS line_item_uuid
       FROM (
         SELECT
           p.key AS column,
@@ -21,13 +21,13 @@ BEGIN
             ELSE quote_literal(p.value)
           END AS value
         FROM json_each_text($1) p
-        WHERE p.key != 'line_item_id'
+        WHERE p.key != 'line_item_uuid'
       ) q
     ) c
   );
 
   SELECT json_strip_nulls(to_json(r)) INTO result
-  FROM sales.line_item(($1->>'line_item_id')::integer) r;
+  FROM sales.line_item(($1->>'line_item_uuid')::uuid) r;
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

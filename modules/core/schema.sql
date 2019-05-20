@@ -37,36 +37,31 @@ CREATE TABLE core.full_address (
 );
 
 CREATE TABLE core.party (
-  party_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  kind       core.party_kind_t
+  party_uuid uuid      DEFAULT uuid_generate_v4() PRIMARY KEY,
+  kind                 core.party_kind_t,
+  name                 text NOT NULL,
+  data                 jsonb,
+  address_uuid         uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL,
+  billing_address_uuid uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL,
+  tsv                  tsvector,
+  created              timestamptz DEFAULT CURRENT_TIMESTAMP,
+  modified             timestamptz
 );
 
 CREATE TABLE core.person (
   party_uuid           uuid REFERENCES core.party (party_uuid) ON DELETE CASCADE,
-  name                 text,
   email                text UNIQUE,
   mobile               text,
   phone                text,
-  address_uuid         uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL, -- Residential address
-  billing_address_uuid uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL, -- Postal address
-  created              timestamptz DEFAULT CURRENT_TIMESTAMP,
-  modified             timestamptz,
   PRIMARY KEY (party_uuid)
 );
 
 CREATE TABLE core.organisation (
   party_uuid           uuid REFERENCES core.party (party_uuid) ON DELETE CASCADE,
-  name                 text,
   trading_name         text,
-  address_uuid         uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL,
-  billing_address_uuid uuid REFERENCES core.address (address_uuid) ON DELETE SET NULL,
   url                  text,
   industry_code        text,
-  data                 jsonb,
-  created              timestamptz DEFAULT CURRENT_TIMESTAMP,
-  modified             timestamptz,
-  PRIMARY KEY (party_uuid),
-  CONSTRAINT valid_name CHECK(name IS NOT NULL OR trading_name IS NOT NULL)
+  PRIMARY KEY (party_uuid)
 );
 
 CREATE TABLE core.role (
@@ -99,6 +94,13 @@ CREATE TABLE core.settings (
   value text
 );
 
+CREATE TABLE core.document (
+  document_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  document_num  bigserial,
+  data          jsonb,
+  created       timestamptz DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE core.note (
   note_uuid  uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   body       text,
@@ -111,51 +113,3 @@ CREATE TABLE core.tag (
   tag_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   name     text UNIQUE
 );
-
-CREATE OR REPLACE VIEW core.party_v AS
-  SELECT
-    prsn.party_uuid,
-    p.kind,
-    prsn.name
-  FROM core.person prsn
-  INNER JOIN core.party p
-    USING (party_uuid)
-
-  UNION ALL
-
-  SELECT
-    o.party_uuid,
-    p.kind,
-    coalesce(o.trading_name, o.name) AS name
-  FROM core.organisation o
-  INNER JOIN core.party p
-    USING (party_uuid);
-
---
--- Triggers
---
-CREATE OR REPLACE FUNCTION party_tg () RETURNS TRIGGER AS
-$$
-BEGIN
-RAISE NOTICE '%', TG_TABLE_NAME;
-  -- Insert new a party when a person or organisation is created
-  INSERT INTO core.party (kind) VALUES (
-    CASE
-      WHEN TG_TABLE_NAME = 'person' THEN
-        ('PERSON')::core.party_kind_t
-      ELSE
-        ('ORGANISATION')::core.party_kind_t
-    END
-  )
-  RETURNING party_uuid INTO NEW.party_uuid;
-
-  RETURN NEW;
-END
-$$
-LANGUAGE 'plpgsql';
-
-CREATE TRIGGER person_tg BEFORE INSERT ON core.person
-  FOR EACH ROW EXECUTE PROCEDURE party_tg();
-
-CREATE TRIGGER organisation_tg BEFORE INSERT ON core.organisation
-  FOR EACH ROW EXECUTE PROCEDURE party_tg();

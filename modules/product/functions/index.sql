@@ -1,4 +1,5 @@
 \ir utils.sql
+\ir attributes.sql
 \ir cost.sql
 \ir composite-cost.sql
 \ir create-cost.sql
