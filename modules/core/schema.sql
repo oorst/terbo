@@ -4,6 +4,11 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE SCHEMA core;
 
 CREATE TYPE core.party_kind_t AS ENUM ('PERSON', 'ORGANISATION');
+CREATE TYPE core.doc_approval_status_t AS ENUM (
+  'DRAFT',
+  'UNDER_REVIEW',
+  'APPROVED'
+);
 
 --
 -- Tables
@@ -89,16 +94,27 @@ CREATE TABLE core.party_relationship (
 );
 
 -- A place to put DB related settings
-CREATE TABLE core.settings (
+CREATE TABLE core.setting (
   name  text,
   value text
 );
 
+CREATE TABLE core.document_kind (
+  name        text PRIMARY KEY
+);
+
+CREATE TABLE core.document_origin (
+  name        text PRIMARY KEY
+);
+
 CREATE TABLE core.document (
-  document_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  document_num  bigserial,
-  data          jsonb,
-  created       timestamptz DEFAULT CURRENT_TIMESTAMP
+  document_uuid   uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  document_num    bigserial,
+  kind            text REFERENCES core.document_kind (name) ON DELETE SET NULL,
+  origin          text REFERENCES core.document_origin (name) ON DELETE SET NULL,
+  approval_status core.doc_approval_status_t,
+  data            jsonb,
+  created         timestamptz DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE core.note (
@@ -113,3 +129,14 @@ CREATE TABLE core.tag (
   tag_uuid uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   name     text UNIQUE
 );
+
+--
+-- Views
+--
+
+CREATE OR REPLACE VIEW core.document_v AS
+  SELECT
+    d.*
+  FROM core.document d
+  INNER JOIN core.document_kind k
+    ON k.name = d.kind;

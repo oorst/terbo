@@ -3,30 +3,20 @@ $$
 DECLARE
   new_invoice_uuid uuid;
 BEGIN
-  WITH document AS (
-    INSERT INTO core.document (
-      data
-    ) VALUES (
-      ($1->>'data')::jsonb
-    )
-    RETURNING *
-  )
   INSERT INTO ar.invoice (
-    invoice_uuid,
-    payor,
+    payor_uuid,
     due_date
   )
   SELECT
-    (SELECT document_uuid FROM document),
     p.payor,
-    COALESCE(p.due_date, )
+    COALESCE(p.due_date, CURRENT_TIMESTAMP + interval '30 days')
   FROM json_to_record($1) AS p (
-    payor    uuid,
-    due_date timestamptz
+    payor_uuid uuid,
+    due_date   timestamptz
   )
   RETURNING invoice_uuid INTO new_invoice_uuid;
 
-  SELECT ar.invoice(new_invoice_uuid) INTO result;
+  result = ar.invoice(new_invoice_uuid);
 END
 $$
 LANGUAGE 'plpgsql' SECURITY DEFINER;

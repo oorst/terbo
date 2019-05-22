@@ -1,12 +1,13 @@
 \ir create-person.sql
 \ir create-organisation.sql
+\ir document.sql
 \ir get-address.sql
 \ir organisation.sql
 \ir party.sql
 \ir person.sql
 \ir list-parties.sql
 \ir search-party.sql
-\ir core-setting.sql
+\ir setting.sql
 \ir update-modified.sql
 \ir update-organisation.sql
 \ir update-person.sql

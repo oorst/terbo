@@ -21,8 +21,8 @@ BEGIN
     product_uuid   uuid,
     line_item_uuid uuid,
     order_uuid     uuid,
-    gross          numeric(10,2),
     price          numeric(10,2),
+    amount_payable numeric(10,2),
     margin         numeric(4,3),
     margin_id      integer,
     markup         numeric(5,2),
@@ -31,16 +31,16 @@ BEGIN
   );
 
   INSERT INTO sales.price (
-    gross,
     price,
+    amount_payable,
     margin,
     margin_id,
     markup,
     markup_id,
     tax_excluded
   ) VALUES (
-    payload.gross,
     payload.price,
+    payload.amount_payable,
     payload.margin,
     payload.margin_id,
     payload.markup,

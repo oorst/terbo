@@ -1,10 +1,9 @@
 \ir create-line-item.sql
+\ir create-invoice.sql
 \ir create-order.sql
-\ir create-price.sql
 \ir create-quote.sql
 \ir delete-order.sql
-\ir get-quote.sql
-\ir get-invoice.sql
+\ir invoice-details.sql
 \ir line-item.sql
 \ir line-items.sql
 \ir list-invoices.sql

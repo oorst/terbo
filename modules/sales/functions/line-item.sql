@@ -16,7 +16,6 @@ BEGIN
     p.sku,
     p.name AS product_name,
     p.short_desc AS product_short_desc,
-    li.discount,
     li.gross AS line_item_gross,  -- User defined gross of the line
     pr.product_gross,
     li.price AS line_item_price,  -- User defined price of the line

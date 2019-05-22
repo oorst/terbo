@@ -6,10 +6,9 @@ CREATE OR REPLACE FUNCTION sales.product_price (
   uuid,
   timestamptz DEFAULT CURRENT_TIMESTAMP
 ) RETURNS TABLE (
-  product_uuid  uuid,
-  product_gross numeric(10,2),
-  product_price numeric(10,2),
-  margin        numeric(4,3)
+  product_uuid uuid,
+  price        numeric(10,2),
+  margin       numeric(4,3)
 ) AS
 $$
 DECLARE
@@ -48,24 +47,21 @@ BEGIN
     WHERE mk.markup_id = price.markup_id;
   END IF;
   
-  IF price.price IS NOT NULL THEN
+  IF price.amount_payable IS NOT NULL THEN
+    result.amount_payable = price.amount_payable;
+    result.price = (price.amount_payable * 0.909090909)::numeric(10,2);
+  ELSIF price.price IS NOT NULL THEN
     result.price = price.price;
-    result.gross = (price.price * 0.909090909)::numeric(10,2);
-  ELSIF price.gross IS NOT NULL THEN
-    result.price = (price.gross * 1.1)::numeric(10,2);
-    result.gross = price.gross;
     
     IF cost.amount IS NOT NULL THEN
-      profit = result.gross - cost.amount;
-      result.margin = (profit / result.gross)::numeric(4,3);
+      profit = result.price - cost.amount;
+      result.margin = (profit / result.price)::numeric(4,3);
     END IF;
   ELSIF cost.amount IS NOT NULL AND price.margin IS NOT NULL THEN
-    result.gross = (cost.amount / (1.000 - price.margin));
+    result.price = (cost.amount / (1.000 - price.margin));
     result.margin = price.margin;
-    result.price = (result.gross * 1.1)::numeric(10,2);
   ELSIF cost.amount IS NOT NULL THEN
-    result.gross = cost.amount;
-    result.price = (result.gross * 1.1)::numeric(10,2);
+    result.price = cost.amount;
   END IF;
 
   -- The default tax_excluded value is false
@@ -74,7 +70,6 @@ BEGIN
   RETURN QUERY
   SELECT
     $1,
-    result.gross,
     result.price,
     result.margin;
 END

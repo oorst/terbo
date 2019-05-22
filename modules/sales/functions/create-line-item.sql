@@ -24,7 +24,12 @@ BEGIN
     RETURNING line_item_uuid INTO new_line_item_uuid;
     
     SELECT json_strip_nulls(to_json(r)) INTO result
-    FROM sales.line_item(new_line_item_uuid) r;
+    FROM (
+      SELECT
+        *
+      FROM sales.line_item_v li
+      WHERE li.line_item_uuid = new_line_item_uuid
+    ) r;
   END IF;
 END
 $$

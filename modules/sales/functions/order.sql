@@ -5,15 +5,23 @@ BEGIN
   FROM (
     SELECT
       o.order_uuid,
+      o.invoice_uuid,
+      i.document_num AS invoice_document_num,
       o.customer_uuid,
+      o.contact_uuid,
       o.status,
       o.data,
       o.short_desc,
       o.created,
-      p.name AS customer_name
+      cst.name AS customer_name,
+      cnt.name AS contact_name
     FROM sales.order o
-    LEFT JOIN core.party p
-      ON p.party_uuid = o.customer_uuid
+    LEFT JOIN ar.invoice_v i
+      ON i.invoice_uuid = o.invoice_uuid
+    LEFT JOIN core.party cst
+      ON cst.party_uuid = o.customer_uuid
+    LEFT JOIN core.party cnt
+      ON cnt.party_uuid = o.contact_uuid
     WHERE o.order_uuid = $1
   ) r;
 END
